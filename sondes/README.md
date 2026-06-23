@@ -1,4 +1,4 @@
-# Ozonesonde (ECC) — Vertical ozone profile data
+﻿# Ozonesonde (ECC) - Vertical ozone profile data
 
 ## Data source
 

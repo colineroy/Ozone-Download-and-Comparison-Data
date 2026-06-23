@@ -1,4 +1,4 @@
-# SAOZ — Ozone & NO2 data download
+﻿# SAOZ - Ozone & NO2 data download
 
 Downloads total column O3 and NO2 from the SAOZ network
 (http://saoz.obs.uvsq.fr/).
@@ -17,8 +17,8 @@ Each file contains **one line per day** with two measurements (sunrise + sunset)
 | O3ss     | Ozone at sunset (Dobson units)                   |
 | dO3sr    | O3 sunrise uncertainty                           |
 | dO3ss    | O3 sunset uncertainty                            |
-| NO2sr    | NO2 at sunrise (×1e15 mol/cm²)                   |
-| NO2ss    | NO2 at sunset (×1e15 mol/cm²)                    |
+| NO2sr    | NO2 at sunrise (�-1e15 mol/cm²)                   |
+| NO2ss    | NO2 at sunset (�-1e15 mol/cm²)                    |
 | dNO2sr   | NO2 sunrise uncertainty                          |
 | dNO2ss   | NO2 sunset uncertainty                           |
 
@@ -66,4 +66,4 @@ python download_saoz.py
 python SAOZ/download_saoz.py
 ```
 
-No login required — data is public.
+No login required - data is public.

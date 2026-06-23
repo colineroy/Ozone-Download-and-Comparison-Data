@@ -23,6 +23,7 @@ import eumdac
 
 LAT_SITE = 67.3668
 LON_SITE = 26.6297
+DELTA    = 1.0       # geographic co-location window (degrees)
 
 DATE_START = "2026-04-10"
 DATE_END   = "2026-04-16"
@@ -45,10 +46,19 @@ def download_for_day(collection, day: date, platform: str):
     day_str = day.strftime("%Y-%m-%d")
     print(f"  [{platform}] {day_str}...", end=" ")
 
+    bbox = (
+        f"POLYGON(({LON_SITE-DELTA} {LAT_SITE-DELTA}, "
+        f"{LON_SITE+DELTA} {LAT_SITE-DELTA}, "
+        f"{LON_SITE+DELTA} {LAT_SITE+DELTA}, "
+        f"{LON_SITE-DELTA} {LAT_SITE+DELTA}, "
+        f"{LON_SITE-DELTA} {LAT_SITE-DELTA}))"
+    )
+
     products = collection.search(
         dtstart=day,
         dtend=day,
         platform=platform,
+        geo=bbox,
     )
 
     count = 0

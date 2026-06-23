@@ -1,4 +1,4 @@
-# Pandonia — Ozone total column data download
+﻿# Pandonia - Ozone total column data download
 
 Downloads ozone total column data from the Pandonia Global Network
 (https://www.pandonia-global-network.org/).
@@ -52,4 +52,4 @@ python download_pandora.py
 python Pandora/download_pandora.py
 ```
 
-No login required — data is public.
+No login required - data is public.

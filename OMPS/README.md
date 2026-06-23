@@ -1,4 +1,4 @@
-# OMPS (Suomi-NPP) — Ozone data download (NASA)
+﻿# OMPS (Suomi-NPP) - Ozone data download (NASA)
 
 ## Data source
 
@@ -43,7 +43,7 @@ python OMPS/download_omps.py
 
 ## Output
 
-`omps_data/snpp_total_column/` — HDF5 files (`.h5`).
+`omps_data/snpp_total_column/` - HDF5 files (`.h5`).
 
 ## File format
 

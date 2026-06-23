@@ -1,4 +1,4 @@
-# OMI (Aura) — Ozone data download (NASA)
+﻿# OMI (Aura) - Ozone data download (NASA)
 
 ## Data source
 
@@ -52,5 +52,5 @@ python OMI/download_omi.py
 ## File format
 
 - **Format**: HDF-EOS5 (`.he5`) or NetCDF
-- **Total column O3**: conversion factor ×0.01 to DU
+- **Total column O3**: conversion factor �-0.01 to DU
 - An AVDC collocated text file is also read by `gs_comparison.py`

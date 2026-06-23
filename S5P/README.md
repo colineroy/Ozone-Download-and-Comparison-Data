@@ -1,4 +1,4 @@
-# S5P TROPOMI — Ozone data download (Copernicus)
+﻿# S5P TROPOMI - Ozone data download (Copernicus)
 
 ## Data source
 

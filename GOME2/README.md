@@ -1,8 +1,8 @@
-# GOME-2 — Ozone data download (eumdac / EUMETSAT)
+﻿# GOME-2 - Ozone data download (eumdac / EUMETSAT)
 
 ## Data source
 
-`eumdac` Python package — EUMETSAT Data Store
+`eumdac` Python package - EUMETSAT Data Store
 Collection: `EO:EUM:DAT:METOP:NTO` (Near Real-Time Total Column O3)
 
 Platforms: MetOp-B and MetOp-C
@@ -22,6 +22,7 @@ Edit the top of `gome2_download.py`:
 |---|---|---|
 | `LAT_SITE` | `67.3668` | Station latitude |
 | `LON_SITE` | `26.6297` | Station longitude |
+| `DELTA` | `1.0` | Geographic co-location window (degrees) |
 | `DATE_START` | `"2026-04-10"` | Start date (YYYY-MM-DD) |
 | `DATE_END` | `"2026-04-16"` | End date (YYYY-MM-DD) |
 | `COLLECTION_ID` | `"EO:EUM:DAT:METOP:NTO"` | EUMETSAT collection |
@@ -38,11 +39,11 @@ python GOME2/gome2_download.py
 
 ## Output
 
-`GOME2/GOME2_data/` — HDF5 files with original EUMETSAT filenames.
+`GOME2/GOME2_data/` - HDF5 files with original EUMETSAT filenames.
 
 ## File format
 
 - **Format**: HDF5 (`.HDF5`)
-- **Ozone**: already in DU — no conversion needed
+- **Ozone**: already in DU - no conversion needed
 - Contains latitude, longitude, time, quality assurance, and O3 fields
 - Near Real-Time product (NTO)

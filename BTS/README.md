@@ -1,9 +1,9 @@
-# BTS — Brewer-Trajectory System ozone data
+﻿# BTS - Brewer-Trajectory System ozone data
 
 ## Data source
 
 BTS data is provided by FMI (Finnish Meteorological Institute).
-Contact FMI or your local NDACC PI to obtain the CSV files.
+Contact FMI to obtain the CSV files.
 
 No public API or auto-download script is available.
 
@@ -18,15 +18,15 @@ No public API or auto-download script is available.
 CSV with columns:
 
 ```
-Time (ISO 8601, GMT), Airmass, Ozone (DU), ...
+Time (ISO 8691, GMT),Airmass,Ozone (DU),Ozone_STD,Ozone_Uncertainty
 ```
 
 - Header must contain `"Ozone (DU)"` to be detected
 - Timestamp format ends with `Z` (UTC)
-- Units: DU (Dobson Units) — no conversion needed
+- Units: DU (Dobson Units) - no conversion needed
 
 Example filename: `20260410_TOC_BTS_66639_V1.csv`
 
 ## Output
 
-No output — files are read directly by `gs_comparison.py`.
+No output - files are read directly by `gs_comparison.py`.

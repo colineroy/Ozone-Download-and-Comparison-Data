@@ -1,4 +1,4 @@
-# Ozone Instrument Comparison — Sodankylä, Finland
+﻿# Ozone Instrument Comparison - Sodankylä, Finland
 
 Multi-instrument comparison of total column ozone and vertical ozone profiles at the Sodankylä FMI station (67.37°N, 26.63°E), part of the NDACC network.
 
@@ -6,8 +6,8 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 
 | Script | Purpose |
 |---|---|
-| `gs_comparison.py` | Total column O3 comparison — ground + satellite instruments |
-| `gs_profile_comparison.py` | Vertical ozone profile comparison — sonde, S5P PR, GOME-2 NTO, OMI OMO3PR |
+| `gs_comparison.py` | Total column O3 comparison - ground + satellite instruments |
+| `gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P PR, GOME-2 NTO, OMI OMO3PR |
 | `gs_comparison_gui.py` | Dash web GUI wrapping `gs_comparison` readers (port 8050) |
 
 ## Supported Instruments
@@ -15,13 +15,13 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 | Instrument | Type | Source | Auto-download | Units |
 |---|---|---|---|---|
 | SAOZ | Ground | `http://saoz.obs.uvsq.fr/saoz/O3_YYYY.SK` | Direct download (no login) | DU |
-| Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | API (no login) | mol/m² → ×2241 → DU |
+| Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | API (no login) | mol/m² → �-2241 → DU |
 | Brewer #037 / #214 | Ground | EUBREWNET (`eubrewnet.aemet.es`) | Via `download_brewer.py` | DU |
 | BTS | Ground | Local CSV files in `BTS/BTS_data/` | Local files (manual) | DU |
 | Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/` | Local files (manual) | DU (COL1) |
-| S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → ×2241 → DU |
+| S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → �-2241 → DU |
 | GOME-2B / GOME-2C | Satellite | `eumdac` (EUMETSAT Data Store, coll. `EO:EUM:DAT:METOP:NTO`) | API (credentials required) | DU |
-| OMI (Aura) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU (×0.01) |
+| OMI (Aura) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU (�-0.01) |
 | OMPS (Suomi-NPP) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU |
 
 ## Quick Start
@@ -45,8 +45,8 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 
    | Command | What it does |
    |---|---|
-   | `python gs_comparison.py` | Total column O3 comparison — all ground + satellite instruments |
-   | `python gs_profile_comparison.py` | Vertical ozone profile comparison — sonde, S5P, GOME-2, OMI |
+   | `python gs_comparison.py` | Total column O3 comparison - all ground + satellite instruments |
+   | `python gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P, GOME-2, OMI |
    | `python gs_comparison_gui.py` | Interactive Dash web interface at http://127.0.0.1:8050 |
 
 ### Credentials
@@ -122,15 +122,15 @@ Each instrument with auto-download has a dedicated script. Edit `DATE_START` and
 
 Credentials are read from the `.env` file (see [Credentials](#credentials)).
 
-BTS and ozonesonde data must be placed manually — there is no download script.
+BTS and ozonesonde data must be placed manually - there is no download script.
 
 ## Pipeline
 
 All comparison scripts follow a 3-phase pattern:
 
-1. **Phase 1 — Download/cache**: Check local cache; download missing files from APIs.
-2. **Phase 2 — Read**: Parse raw measurement points (no daily averaging).
-3. **Phase 3 — Plot**: Generate comparison plots in `plots/`.
+1. **Phase 1 - Download/cache**: Check local cache; download missing files from APIs.
+2. **Phase 2 - Read**: Parse raw measurement points (no daily averaging).
+3. **Phase 3 - Plot**: Generate comparison plots in `plots/`.
 
 Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.png`.
 
@@ -233,6 +233,7 @@ plotly>=5.15
 ### Brewer
 - Data from EUBREWNET (Brewer #037 MkII, #214).
 - Also includes FMI CSV file with Brewer #037 and #214 columns.
+- Alternative: download from FMI portal at https://hav.fmi.fi/hav/asema/index.php?fmisid=101932
 - See `Brewer/README.md` for details.
 - Standalone download: edit `BREWER_IDS`, `DATE_START`, `DATE_END` in `Brewer/download_brewer.py`, then run `python Brewer/download_brewer.py`.
 - Run `python Brewer/brewer_plot.py` for standalone analysis of downloaded Brewer files.
@@ -259,7 +260,7 @@ plotly>=5.15
 
 ### GOME-2
 - HDF5 files downloaded via the `eumdac` Python package (EUMETSAT Data Store, MetOp-B + MetOp-C).
-- Collection `EO:EUM:DAT:METOP:NTO` — Near Real-Time Total Column O3.
+- Collection `EO:EUM:DAT:METOP:NTO` - Near Real-Time Total Column O3.
 - Ozone already in DU.
 - See `GOME2/README.md` for details.
 - Standalone download: edit `DATE_START`, `DATE_END` in `GOME2/gome2_download.py`, then run `python GOME2/gome2_download.py`.
@@ -267,7 +268,7 @@ plotly>=5.15
 ### OMI (Aura)
 - OMDOAO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C3454342622-GES_DISC`).
 - AVDC overpass collocated text and OMO3PR profile HDF5 also supported.
-- Conversion factor: ×0.01 to DU.
+- Conversion factor: �-0.01 to DU.
 - See `OMI/README.md` for details.
 - Standalone download: edit `DATE_START`, `DATE_END` in `OMI/download_omi.py`, then run `python OMI/download_omi.py`.
 
