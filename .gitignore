@@ -1,0 +1,40 @@
+# Credentials
+.env
+
+# Données satellites et instruments
+SAOZ/saoz_data/
+Pandora/pandora_data/
+S5P/s5p_data/
+GOME2/GOME2_data/
+OMI/omi_data/
+OMPS/omps_data/
+BTS/BTS_data/
+BTS/*.zip
+Brewer/brewer_data/
+
+# Données sondes (fichiers SHARP et archives)
+sondes/so*.q*
+sondes/*.zip
+sondes/*.mat
+sondes/*.xls
+sondes/table.xls
+
+# Plots générés
+plots/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+Brewer/*.csv
+Pandora/*.png
+*.log
