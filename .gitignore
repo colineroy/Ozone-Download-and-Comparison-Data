@@ -39,6 +39,9 @@ Brewer/*.csv
 Pandora/*.png
 *.log
 
+# MATLAB source files
+**/*.m
+
 # Technical documentation (large binary files)
 **/*.docx
 SAOZ/SAOZ_Technical_Documentation.pdf

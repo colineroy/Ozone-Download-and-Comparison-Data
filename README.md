@@ -20,7 +20,7 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 | BTS | Ground | Local CSV files in `BTS/BTS_data/` | Local files (manual) | DU |
 | Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/` | Local files (manual) | DU (COL1) |
 | S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → ×2241 → DU |
-| GOME-2B / GOME-2C | Satellite | EUMETSAT Data Store (`https://data.eumetsat.int`, coll. `EO:EUM:DAT:METOP:NTO`) | API (credentials required) | DU |
+| GOME-2B / GOME-2C | Satellite | `eumdac` (EUMETSAT Data Store, coll. `EO:EUM:DAT:METOP:NTO`) | API (credentials required) | DU |
 | OMI (Aura) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU (×0.01) |
 | OMPS (Suomi-NPP) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU |
 
@@ -41,24 +41,33 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
    # source venv/bin/activate   # Mac/Linux
    pip install -r requirements.txt
    ```
-4. **Run the comparison:**
-   ```bash
-   python gs_comparison.py
-   # or
-   python gs_profile_comparison.py
-   # or
-   python gs_comparison_gui.py   # then open http://127.0.0.1:8050
-   ```
+4. **Choose a comparison script to run:**
+
+   | Command | What it does |
+   |---|---|
+   | `python gs_comparison.py` | Total column O3 comparison — all ground + satellite instruments |
+   | `python gs_profile_comparison.py` | Vertical ozone profile comparison — sonde, S5P, GOME-2, OMI |
+   | `python gs_comparison_gui.py` | Interactive Dash web interface at http://127.0.0.1:8050 |
 
 ### Credentials
 
-Create a `.env` file (see `.env` template) with:
+Create a `.env` file at the project root with the following variables.
+Register on each service to obtain your credentials:
+
+| Service | Used by | Where to register | `.env` variables |
+|---|---|---|---|
+| Copernicus Data Space | S5P TROPOMI | https://dataspace.copernicus.eu/ | `COPERNICUS_USER`, `COPERNICUS_PASS` |
+| EUMETSAT Data Store | GOME-2 | https://data.eumetsat.int/ → profile → API Keys | `EUMETSAT_KEY`, `EUMETSAT_SECRET` |
+| EUBREWNET | Brewer | https://eubrewnet.aemet.es/eubrewnet/default/registration | `EUBREWNET_USER`, `EUBREWNET_PASS` |
+| NASA Earthdata | OMI, OMPS | https://urs.earthdata.nasa.gov/ | `EARTHDATA_USER`, `EARTHDATA_PASS` |
+
+Example `.env` file:
 
 ```
-COPERNICUS_USER=your_email
+COPERNICUS_USER=your_email@example.com
 COPERNICUS_PASS=your_password
-EUMETSAT_KEY=your_key
-EUMETSAT_SECRET=your_secret
+EUMETSAT_KEY=your_consumer_key
+EUMETSAT_SECRET=your_consumer_secret
 EUBREWNET_USER=your_username
 EUBREWNET_PASS=your_password
 EARTHDATA_USER=your_username
@@ -249,7 +258,7 @@ plotly>=5.15
 - Standalone download: edit `DATE_START`, `DATE_END` in `S5P/S5Pozone.py`, then run `python S5P/S5Pozone.py`.
 
 ### GOME-2
-- HDF5 files from EUMETSAT Data Store (`https://data.eumetsat.int`, MetOp-B + MetOp-C).
+- HDF5 files downloaded via the `eumdac` Python package (EUMETSAT Data Store, MetOp-B + MetOp-C).
 - Collection `EO:EUM:DAT:METOP:NTO` — Near Real-Time Total Column O3.
 - Ozone already in DU.
 - See `GOME2/README.md` for details.

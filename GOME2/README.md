@@ -1,10 +1,8 @@
-# GOME-2 — Ozone data download (EUMETSAT)
+# GOME-2 — Ozone data download (eumdac / EUMETSAT)
 
 ## Data source
 
-EUMETSAT Data Store
-https://data.eumetsat.int
-
+`eumdac` Python package — EUMETSAT Data Store
 Collection: `EO:EUM:DAT:METOP:NTO` (Near Real-Time Total Column O3)
 
 Platforms: MetOp-B and MetOp-C
