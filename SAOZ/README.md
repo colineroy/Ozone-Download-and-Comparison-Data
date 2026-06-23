@@ -30,11 +30,13 @@ Output:
 
 Edit the top of `download_saoz.py`:
 
-```python
-STATION = "SK"        # Station code (see below)
-DATE_START = "2026-01-01"
-DATE_END   = "2026-06-22"
-```
+| Variable | Default | Description |
+|---|---|---|
+| `STATION` | `"SK"` | Station code (see table below) |
+| `DATE_START` | `"2025-04-15"` | Start date (YYYY-MM-DD) |
+| `DATE_END` | `"2025-04-15"` | End date (YYYY-MM-DD) |
+| `BASE_URL` | `"http://saoz.obs.uvsq.fr/saoz"` | SAOZ data server |
+| `OUT_DIR` | `Path("./saoz_data")` | Output directory |
 
 ### Station codes
 
@@ -54,10 +56,14 @@ DATE_END   = "2026-06-22"
 | PA   | Paris              | 49°N    |
 | GU   | Guyancourt         | 49°N    |
 
-## Run
+## How to download
 
 ```bash
+# From the SAOZ/ directory
 python download_saoz.py
+
+# Or from the project root
+python SAOZ/download_saoz.py
 ```
 
 No login required — data is public.
