@@ -38,3 +38,7 @@ Thumbs.db
 Brewer/*.csv
 Pandora/*.png
 *.log
+
+# Technical documentation (large binary files)
+**/*.docx
+SAOZ/SAOZ_Technical_Documentation.pdf

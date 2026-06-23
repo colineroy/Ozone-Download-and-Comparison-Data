@@ -14,43 +14,41 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 
 | Instrument | Type | Source | Auto-download | Units |
 |---|---|---|---|---|
-| SAOZ | Ground | `http://saoz.obs.uvsq.fr/saoz/O3_YYYY.SK` | Yes (HTTP) | DU |
-| Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | Yes (REST) | mol/m² → ×2241 → DU |
+| SAOZ | Ground | `http://saoz.obs.uvsq.fr/saoz/O3_YYYY.SK` | Direct download (no login) | DU |
+| Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | API (no login) | mol/m² → ×2241 → DU |
 | Brewer #037 / #214 | Ground | EUBREWNET (`eubrewnet.aemet.es`) | Via `download_brewer.py` | DU |
-| BTS | Ground | Local CSV files in `BTS/BTS_data/` | No (manual) | DU |
-| Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/` | No (manual) | DU (COL1) |
-| S5P TROPOMI | Satellite | Copernicus Data Space OData API | Yes (OAuth2) | mol/m² → ×2241 → DU |
-| GOME-2B / GOME-2C | Satellite | EUMETSAT Data Store (`eumdac`) | Yes (OAuth) | DU |
-| OMI (Aura) | Satellite | NASA Earthdata CMR API / AVDC | Yes | DU (×0.01) |
-| OMPS (Suomi-NPP) | Satellite | NASA Earthdata CMR API / AVDC | Yes | DU |
-
-## Instrument Documentation
-
-Each instrument folder contains technical documentation and instrument-specific README files:
-
-| Document | Location | Description |
-|---|---|---|
-| Instrument Reference | `instruments.md` | Full instrument table with status, format, unit conversion |
-| SAOZ README | `SAOZ/README.md` | SAOZ download config, station codes, data format |
-| Pandora README | `Pandora/README.md` | Pandora download config, product codes, API details |
-| SAOZ Technical Doc | `SAOZ/SAOZ_Technical_Documentation.pdf` | SAOZ instrument technical manual |
-| Pandora Technical Doc | `Pandora/Pandora_Technical_Documentation.docx` | Pandora instrument technical manual |
-| Brewer Technical Doc | `Brewer/Brewer_Technical_Documentation.docx` | Brewer instrument technical manual |
-| BTS Technical Doc | `BTS/BTS_Technical_Documentation.docx` | BTS instrument technical manual |
+| BTS | Ground | Local CSV files in `BTS/BTS_data/` | Local files (manual) | DU |
+| Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/` | Local files (manual) | DU (COL1) |
+| S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → ×2241 → DU |
+| GOME-2B / GOME-2C | Satellite | EUMETSAT Data Store (`https://data.eumetsat.int`, coll. `EO:EUM:DAT:METOP:NTO`) | API (credentials required) | DU |
+| OMI (Aura) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU (×0.01) |
+| OMPS (Suomi-NPP) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU |
 
 ## Quick Start
 
-```bash
-# Total column comparison (ground + satellite)
-python gs_comparison.py
+### Getting started
 
-# Vertical profile comparison
-python gs_profile_comparison.py
-
-# Web GUI (Dash)
-python gs_comparison_gui.py
-# Open http://127.0.0.1:8050
-```
+1. **Install Git** from https://git-scm.com/ (if not already installed)
+2. Open a terminal and clone the repository:
+   ```bash
+   git clone https://github.com/colineroy/Ozone-Download-and-Comparison-Data.git
+   cd Ozone-Download-and-Comparison-Data
+   ```
+3. **Install Python dependencies** (recommended: use a virtual environment):
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate    # Windows
+   # source venv/bin/activate   # Mac/Linux
+   pip install -r requirements.txt
+   ```
+4. **Run the comparison:**
+   ```bash
+   python gs_comparison.py
+   # or
+   python gs_profile_comparison.py
+   # or
+   python gs_comparison_gui.py   # then open http://127.0.0.1:8050
+   ```
 
 ### Credentials
 
@@ -182,7 +180,7 @@ pip install eumdac                   # GOME-2 downloader
 pip install dash plotly              # GUI
 ```
 
-A `requirements.txt` is recommended:
+A `requirements.txt` is provided at the project root:
 
 ```
 requests>=2.31
@@ -241,19 +239,19 @@ plotly>=5.15
 - Standalone download: edit `DATE_START`, `DATE_END` in `S5P/S5Pozone.py`, then run `python S5P/S5Pozone.py`.
 
 ### GOME-2
-- HDF5 files from EUMETSAT Data Store (MetOp-B + MetOp-C).
+- HDF5 files from EUMETSAT Data Store (`https://data.eumetsat.int`, MetOp-B + MetOp-C).
 - Collection `EO:EUM:DAT:METOP:NTO` — Near Real-Time Total Column O3.
 - Ozone already in DU.
 - Standalone download: edit `DATE_START`, `DATE_END` in `GOME2/gome2_download.py`, then run `python GOME2/gome2_download.py`.
 
 ### OMI (Aura)
-- OMDOAO3 total column from NASA Earthdata CMR API (NetCDF).
+- OMDOAO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C3454342622-GES_DISC`).
 - AVDC overpass collocated text and OMO3PR profile HDF5 also supported.
 - Conversion factor: ×0.01 to DU.
 - Standalone download: edit `DATE_START`, `DATE_END` in `OMI/download_omi.py`, then run `python OMI/download_omi.py`.
 
 ### OMPS (Suomi-NPP)
-- NMTO3 total column from NASA Earthdata CMR API (HDF5).
+- NMTO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C1386443916-GES_DISC`).
 - AVDC collocated text file also supported.
 - Standalone download: edit `DATE_START`, `DATE_END` in `OMPS/download_omps.py`, then run `python OMPS/download_omps.py`.
 
