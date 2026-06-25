@@ -1,10 +1,10 @@
-﻿# Brewer — Ozone data for Sodankylä
+﻿# Brewer - Ozone data for Sodankylä
 
 ## Data source
 
 Brewer total column ozone data for Sodankylä (Brewers #037 MkII, #214) is
 downloaded manually from the **Finnish Meteorological Institute (FMI)** open
-data portal. There is no automated download script — CSV files must be placed
+data portal. There is no automated download script - CSV files must be placed
 in `brewer_data/` by hand.
 
 ### FMI observation portal (recommended)
@@ -38,7 +38,7 @@ The European Brewer Network (EUBREWNET) provides a REST API documented at:
 https://eubrewnet.aemet.es/dokuwiki/doku.php?id=codes:dbaccess
 
 However, API access requires **special authorisation** from the EUBREWNET
-administrators — simply having a web account on the portal is not sufficient.
+administrators - simply having a web account on the portal is not sufficient.
 The API enforces role-based access control that a standard user account does
 not satisfy.
 
@@ -57,7 +57,7 @@ FMISID;LPNN;OBSDATE_UTC;OBSTIME_UTC;...;OZONE #37 (DU);OZONE #214 (DU);...
 101932;7501;15.04.2026;10:30;...;364.2;358.9;...
 ```
 
-- Units: Dobson Units (DU) — no conversion needed.
+- Units: Dobson Units (DU) - no conversion needed.
 - Brewer measurements are sparse (daylight hours only), most rows have empty
   OZONE columns.
 
