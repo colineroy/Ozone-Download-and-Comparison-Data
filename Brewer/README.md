@@ -1,72 +1,72 @@
-﻿# Brewer - Ozone data download (EUBREWNET)
+﻿# Brewer — Ozone data for Sodankylä
 
 ## Data source
 
-### Option 1: EUBREWNET (official network)
+Brewer total column ozone data for Sodankylä (Brewers #037 MkII, #214) is
+downloaded manually from the **Finnish Meteorological Institute (FMI)** open
+data portal. There is no automated download script — CSV files must be placed
+in `brewer_data/` by hand.
 
-EUBREWNET web portal: https://eubrewnet.aemet.es/eubrewnet
+### FMI observation portal (recommended)
 
-Sodankyla station ID: 18
-Brewer instruments: #037 (MkII), #214
+URL: https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs
 
-### Option 2: FMI observation portal (no login required)
+Steps:
+1. Open the link above (Sodankylä Tähtelä, FMISID=101932)
+2. Set the date range with the **Alkaen** (start) and **Päättyen** (end) fields
+3. Scroll to the bottom of the observations table
+4. Click **Hae** to download the CSV file
+5. Place the downloaded file in `Brewer/brewer_data/`
 
-If you do not have EUBREWNET credentials, Brewer data for Sodankyla can be
-downloaded directly from the FMI weather portal:
+The CSV filename follows the pattern `st-lpnn-7501fmisid-101932-csv-*.csv`.
 
-https://hav.fmi.fi/hav/asema/index.php?fmisid=101932&page=obs
+`gs_comparison.py` detects these files automatically as long as the filename
+contains `fmisid`.
 
-1. Open the URL above (Sodankyla, FMISID=101932)
-2. Set the date range (format: DD.MM.YYYY)
-3. Check the box **Ozone (DU)** under "Instant observations" (heti)
-4. Click **Hae** to display the data
-5. Download as CSV
+### Column names expected by the reader
 
-Place the CSV file in `Brewer/` - `gs_comparison.py` detects it automatically
-as long as the filename contains `fmisid`.
+| Column in CSV | Description |
+|---|---|
+| `OZONE #37 (DU)` | Brewer #037 total column ozone (Dobson Units) |
+| `OZONE #214 (DU)` | Brewer #214 total column ozone (Dobson Units) |
 
-## Prerequisites
+Additional columns for date/time: `OBSDATE_UTC` (DD.MM.YYYY), `OBSTIME_UTC` (HH:MM).
 
-- A free account at https://eubrewnet.aemet.es/eubrewnet/default/registration
-- Credentials in `.env`: `EUBREWNET_USER`, `EUBREWNET_PASS`
-- Dependencies: `requests`, `beautifulsoup4`, `lxml`
+### EUBREWNET API (restricted access)
 
-## Configuration
+The European Brewer Network (EUBREWNET) provides a REST API documented at:
+https://eubrewnet.aemet.es/dokuwiki/doku.php?id=codes:dbaccess
 
-Edit the top of `download_brewer.py`:
+However, API access requires **special authorisation** from the EUBREWNET
+administrators — simply having a web account on the portal is not sufficient.
+The API enforces role-based access control that a standard user account does
+not satisfy.
 
-| Variable | Default | Description |
-|---|---|---|
-| `BREWER_IDS` | `["037", "214"]` | Brewer serial numbers |
-| `PRODUCT` | `"ozone"` | Product type (ozone, uv, aod, so2) |
-| `LEVEL` | `"1.5"` | Data level (1.5 = NRT, 2.0 = final) |
-| `DATE_START` | `"2026-04-15"` | Start date (YYYY-MM-DD) |
-| `DATE_END` | `"2026-04-15"` | End date (YYYY-MM-DD) |
-
-## How to download
-
-```bash
-# From the Brewer/ directory
-python download_brewer.py
-
-# Or from the project root
-python Brewer/download_brewer.py
+If you have been granted API access, configure your credentials in `.env`:
 ```
-
-## Output
-
-Files saved to `brewer_data/YYYY/` with original EUBREWNET filenames (`.037`, `.214`, `.txt`, `.csv`).
+EUBREWNET_USER=your_username
+EUBREWNET_PASS=your_password
+```
 
 ## File format
 
-- **B-files** (`.037`, `.214`): Brewer raw instrument format, multi-line with metadata and ozone values.
-- **Text / CSV**: Tabular data with columns including ozone in DU.
-- **Units**: DU (Dobson Units) - no conversion needed.
+The FMI CSVs are semicolon-delimited with the following structure:
 
-## Standalone analysis
-
-```bash
-python brewer_plot.py
+```
+FMISID;LPNN;OBSDATE_UTC;OBSTIME_UTC;...;OZONE #37 (DU);OZONE #214 (DU);...
+101932;7501;15.04.2026;10:30;...;364.2;358.9;...
 ```
 
-Parses downloaded files and prints O3 summary statistics.
+- Units: Dobson Units (DU) — no conversion needed.
+- Brewer measurements are sparse (daylight hours only), most rows have empty
+  OZONE columns.
+
+## Directory layout
+
+```
+Brewer/
++-- README.md                       # This file
++-- brewer_data/                    # Place FMI CSVs here
+|   +-- st-lpnn-7501fmisid-101932-csv-*.csv
++-- Brewer_Technical_Documentation.docx
+```

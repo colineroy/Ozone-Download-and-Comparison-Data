@@ -16,9 +16,9 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 |---|---|---|---|---|
 | SAOZ | Ground | `http://saoz.obs.uvsq.fr/saoz/O3_YYYY.SK` | Direct download (no login) | DU |
 | Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | API (no login) | mol/m² → �-2241 → DU |
-| Brewer #037 / #214 | Ground | EUBREWNET (`eubrewnet.aemet.es`) | Via `download_brewer.py` | DU |
+| Brewer #037 / #214 | Ground | FMI portal ([hav.fmi.fi](https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs)) | Local files (manual) | DU |
 | BTS | Ground | Local CSV files in `BTS/BTS_data/` | Local files (manual) | DU |
-| Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/` | Local files (manual) | DU (COL1) |
+| Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/sondes_data/` | Local files (manual) | DU (COL1) |
 | S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → �-2241 → DU |
 | GOME-2B / GOME-2C | Satellite | `eumdac` (EUMETSAT Data Store, coll. `EO:EUM:DAT:METOP:NTO`) | API (credentials required) | DU |
 | OMI (Aura) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU (�-0.01) |
@@ -58,7 +58,7 @@ Register on each service to obtain your credentials:
 |---|---|---|---|
 | Copernicus Data Space | S5P TROPOMI | https://dataspace.copernicus.eu/ | `COPERNICUS_USER`, `COPERNICUS_PASS` |
 | EUMETSAT Data Store | GOME-2 | https://data.eumetsat.int/ → profile → API Keys | `EUMETSAT_KEY`, `EUMETSAT_SECRET` |
-| EUBREWNET | Brewer | https://eubrewnet.aemet.es/eubrewnet/default/registration | `EUBREWNET_USER`, `EUBREWNET_PASS` |
+| EUBREWNET | Brewer (API, restricted) | https://eubrewnet.aemet.es/eubrewnet/default/registration | `EUBREWNET_USER`, `EUBREWNET_PASS` (optional) |
 | NASA Earthdata | OMI, OMPS | https://urs.earthdata.nasa.gov/ | `EARTHDATA_USER`, `EARTHDATA_PASS` |
 
 Example `.env` file:
@@ -68,8 +68,8 @@ COPERNICUS_USER=your_email@example.com
 COPERNICUS_PASS=your_password
 EUMETSAT_KEY=your_consumer_key
 EUMETSAT_SECRET=your_consumer_secret
-EUBREWNET_USER=your_username
-EUBREWNET_PASS=your_password
+# EUBREWNET_USER=your_username    # optional (API restricted)
+# EUBREWNET_PASS=your_password
 EARTHDATA_USER=your_username
 EARTHDATA_PASS=your_password
 ```
@@ -97,7 +97,7 @@ Edit the `CONFIG` section at the top of each script.
 |---|---|---|
 | `DATE_START` | `"2026-04-15"` | Period start |
 | `DATE_END` | `"2026-04-15"` | Period end |
-| `SONDE_DIR` | `./sondes` | Ozonesonde data directory |
+| `SONDE_DIR` | `./sondes/sondes_data` | Ozonesonde data directory |
 | `S5P_PR_DIR` | `./S5P/s5p_data/profile` | S5P profile NetCDF directory |
 | `GOME2_DIR` | `./GOME2/GOME2_data` | GOME-2 HDF5 directory |
 | `AVDC_OMI_H5` | `./OMI/omi_data/npp_omo3pr_sodankyla.h5` | AVDC OMI profile HDF5 |
@@ -116,13 +116,12 @@ Each instrument with auto-download has a dedicated script. Edit `DATE_START` and
 | Pandora | `Pandora/download_pandora.py` | `python Pandora/download_pandora.py` | `PAN_ID`, `DATE_START`, `DATE_END` |
 | S5P TROPOMI | `S5P/S5Pozone.py` | `python S5P/S5Pozone.py` | `DATE_START`, `DATE_END`, Copernicus credentials |
 | GOME-2 | `GOME2/gome2_download.py` | `python GOME2/gome2_download.py` | `DATE_START`, `DATE_END`, EUMETSAT credentials |
-| Brewer | `Brewer/download_brewer.py` | `python Brewer/download_brewer.py` | `BREWER_IDS`, `DATE_START`, `DATE_END`, EUBREWNET credentials |
 | OMI | `OMI/download_omi.py` | `python OMI/download_omi.py` | `DATE_START`, `DATE_END`, Earthdata credentials |
 | OMPS | `OMPS/download_omps.py` | `python OMPS/download_omps.py` | `DATE_START`, `DATE_END`, Earthdata credentials |
 
 Credentials are read from the `.env` file (see [Credentials](#credentials)).
 
-BTS and ozonesonde data must be placed manually - there is no download script.
+BTS, Brewer, and ozonesonde data must be placed manually - there are no download scripts.
 
 ## Pipeline
 
@@ -153,19 +152,20 @@ Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.pn
 |   +-- download_pandora.py
 |   +-- pandora_data/             # Pandonia L2 text files
 +-- Brewer/
-|   +-- README.md                 # How to get Brewer data
-|   +-- download_brewer.py
-|   +-- brewer_plot.py            # Standalone Brewer analysis
+|   +-- README.md                 # How to get Brewer data (FMI manual)
+|   +-- brewer_data/              # FMI CSV files
+|   +-- Brewer_Technical_Documentation.docx
 +-- BTS/
 |   +-- README.md                 # How to get BTS data
 |   +-- BTS_data/                 # Local BTS CSV files
 |   +-- BTS_OZON_Sodanklya.zip
 +-- sondes/
 |   +-- README.md                 # How to get ozonesonde data
-|   +-- parluku2.m                # MATLAB SHARP parser
-|   +-- SondeInfo.m               # MATLAB metadata extractor
-|   +-- table.m                   # MATLAB inventory generator
-|   +-- so*.q*                    # Ozonesonde data (SHARP format)
+|   +-- sondes_data/              # Ozonesonde files (SHARP format)
+|       +-- parluku2.m                # MATLAB SHARP parser
+|       +-- SondeInfo.m               # MATLAB metadata extractor
+|       +-- table.m                   # MATLAB inventory generator
+|       +-- so*.q*                    # Ozonesonde data (SHARP format)
 +-- S5P/
 |   +-- README.md                 # How to get S5P TROPOMI data
 |   +-- S5Pozone.py               # TROPOMI downloader
@@ -192,7 +192,7 @@ Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.pn
 ```bash
 pip install requests numpy matplotlib scipy h5py python-dotenv
 pip install xarray netCDF4
-pip install beautifulsoup4 lxml     # Brewer downloader
+pip install beautifulsoup4 lxml     # SAOZ downloader
 pip install eumdac                   # GOME-2 downloader
 pip install dash plotly              # GUI
 ```
@@ -231,12 +231,11 @@ plotly>=5.15
 - Standalone download: edit `PAN_ID`, `DATE_START`, `DATE_END` in `Pandora/download_pandora.py`, then run `python Pandora/download_pandora.py`.
 
 ### Brewer
-- Data from EUBREWNET (Brewer #037 MkII, #214).
-- Also includes FMI CSV file with Brewer #037 and #214 columns.
-- Alternative: download from FMI portal at https://hav.fmi.fi/hav/asema/index.php?fmisid=101932
-- See `Brewer/README.md` for details.
-- Standalone download: edit `BREWER_IDS`, `DATE_START`, `DATE_END` in `Brewer/download_brewer.py`, then run `python Brewer/download_brewer.py`.
-- Run `python Brewer/brewer_plot.py` for standalone analysis of downloaded Brewer files.
+- Data manually downloaded from FMI portal: https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs
+- Brewers #037 (MkII) and #214 — columns `OZONE #37 (DU)` and `OZONE #214 (DU)`.
+- Place the CSV in `Brewer/brewer_data/` — the reader detects it automatically.
+- The EUBREWNET REST API also exists but requires special authorisation (a web
+  account alone is not sufficient). See `Brewer/README.md` for details.
 
 ### BTS
 - CSV format: `Time (ISO 8601, GMT), Airmass, Ozone (DU), ...`
@@ -248,7 +247,7 @@ plotly>=5.15
 - Total column from `COL1` field.
 - Ascension ~2h window starting at ~08:30 UTC.
 - See `sondes/README.md` for details.
-- MATLAB parsers available in `sondes/` for raw SHARP data.
+- MATLAB parsers available in `sondes/sondes_data/` for raw SHARP data.
 
 ### S5P TROPOMI
 - NetCDF4, group `PRODUCT`, variable `ozone_total_vertical_column` (mol/m²).

@@ -1,193 +1,135 @@
 """
-Brewer (EUBREWNET) — Download ozone data for Sodankyla
+Brewer — EUBREWNET API download (if access granted)
+=====================================================
+Requires special API permissions from EUBREWNET admins.
+See: https://eubrewnet.aemet.es/dokuwiki/doku.php?id=codes:dbaccess
 
-Site : https://eubrewnet.aemet.es/eubrewnet
-Station : Sodankylä (internal ID: 18)
-Brewers : #37 (MkII), #214
+If you don't have API access yet, download manually from:
+  https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs
+  → place CSV in Brewer/brewer_data/
 
-Requires a free account at https://eubrewnet.aemet.es/eubrewnet/default/registration
-
-Dependencies:
-    pip install requests beautifulsoup4 lxml
+Credentials in .env:
+  EUBREWNET_USER=your_email
+  EUBREWNET_PASS=your_password
 """
 
-import os
+import os, csv
+from pathlib import Path
+from datetime import datetime
+import requests
 from dotenv import load_dotenv
 load_dotenv()
-import requests
-from bs4 import BeautifulSoup
-from pathlib import Path
-from datetime import datetime, timedelta
-import re
-import urllib.parse
 
-# ── CONFIG ─────────────────────────────────────────────────────
-EUBREWNET_USER = os.getenv("EUBREWNET_USER", "your_username")
-EUBREWNET_PASS = os.getenv("EUBREWNET_PASS", "your_password")
-
-STATION_ID = 18                # Sodankylä internal ID
-BREWER_IDS = ["037", "214"]    # 3-digit format used in filenames
-PRODUCT    = "ozone"           # ozone, uv, aod, so2
-LEVEL      = "1.5"             # 1.5 (NRT) or 2.0 (final)
-
-DATE_START = "2026-04-15"
-DATE_END   = "2026-04-15"
-
-OUT_DIR = Path("./brewer_data")
+# ── CONFIG ──────────────────────────────────────────────────────
+DATE_START = "2026-04-01"
+DATE_END   = "2026-04-30"
+BREWER_IDS = [37, 214]
+OUT_DIR    = Path("./Brewer/brewer_data")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-BASE_URL = "https://eubrewnet.aemet.es/eubrewnet"
+USER = os.getenv("EUBREWNET_USER", "")
+PASS = os.getenv("EUBREWNET_PASS", "")
+
+# Both GET and PROCESS paths — one of them should work depending on permissions
+API_PATHS = [
+    "https://eubrewnet.aemet.es/eubrewnet/data/get/O3L1_5",
+    "https://eubrewnet.aemet.es/eubrewnet/data/process/O3L1_5",
+]
 
 
-class EubrewnetSession:
-    """Authenticated session for EUBREWNET."""
-
-    def __init__(self, username, password):
-        self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                          "AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/120.0.0.0 Safari/537.36",
-        })
-        self.username = username
-        self.password = password
-        self.logged_in = False
-
-    def _get_formkey(self, html):
-        """Extract _formkey CSRF token from web2py HTML."""
-        soup = BeautifulSoup(html, "lxml")
-        fk = soup.find("input", {"name": "_formkey"})
-        return fk["value"] if fk else None
-
-    def login(self):
-        """Authenticate to EUBREWNET."""
-        print("  Logging in to EUBREWNET...")
-
-        login_url = f"{BASE_URL}/default/user/login"
-        resp = self.session.get(login_url)
-        resp.raise_for_status()
-
-        formkey = self._get_formkey(resp.text)
-        if not formkey:
-            raise RuntimeError("Could not find CSRF _formkey")
-
-        data = {
-            "username":   self.username,
-            "password":   self.password,
-            "remember_me": "on",
-            "_next":      f"{BASE_URL}/default/index",
-            "_formkey":   formkey,
-            "_formname":  "login",
-        }
-        resp = self.session.post(login_url, data=data)
-        resp.raise_for_status()
-
-        if "Log in" in resp.text and "Invalid" in resp.text:
-            raise RuntimeError("Login failed: check your username/password")
-
-        self.logged_in = True
-        print("  Logged in!\n")
-
-    def get_daily_page(self, date, product=PRODUCT, level=LEVEL):
-        """Fetch the data page for a given date."""
-        url = (f"{BASE_URL}/station/view/{STATION_ID}"
-               f"/{date.year}/{date.month:02d}/{date.day:02d}"
-               f"?level={level}&product={product}")
-        resp = self.session.get(url)
-        resp.raise_for_status()
-        return resp.text
-
-    def extract_download_links(self, html):
-        """Extract file download links from the page HTML."""
-        soup = BeautifulSoup(html, "lxml")
-        links = []
-
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            if any(href.endswith(f".{bid}") for bid in BREWER_IDS):
-                links.append(href)
-            elif href.endswith(".txt") or href.endswith(".csv"):
-                links.append(href)
-            if "/default/download/" in href:
-                links.append(href)
-
-        return list(set(links))
-
-    def download_file(self, url, date):
-        """Download a single file from EUBREWNET."""
-        if url.startswith("/"):
-            url = f"{BASE_URL}{url}"
-        elif not url.startswith("http"):
-            url = f"{BASE_URL}/{url}"
-
-        filename = url.split("/")[-1].split("?")[0]
-        if not filename:
-            filename = f"brewer_{date.strftime('%Y%m%d')}.dat"
-
-        date_dir = OUT_DIR / date.strftime("%Y")
-        date_dir.mkdir(parents=True, exist_ok=True)
-        out_path = date_dir / filename
-
-        if out_path.exists():
-            print(f"    [skip]  {filename}")
-            return out_path
-
-        print(f"    [dl]    {filename}")
+def download_brewer(brewer_id: int) -> Path | None:
+    """Try GET then PROCESS endpoint for one Brewer."""
+    params = {
+        "brewerid": brewer_id,
+        "date":     DATE_START,
+        "enddate":  DATE_END,
+        "format":   "csv",
+    }
+    for url in API_PATHS:
         try:
-            resp = self.session.get(url, stream=True)
-            resp.raise_for_status()
-            with open(out_path, "wb") as f:
-                for chunk in resp.iter_content(chunk_size=65536):
-                    f.write(chunk)
-        except Exception as e:
-            print(f"            [!] {e}")
-            if out_path.exists():
-                out_path.unlink()
-            return None
-        return out_path
+            r = requests.get(url, params=params,
+                             auth=(USER, PASS), timeout=30)
+        except requests.RequestException as e:
+            print(f"  [!] {e}")
+            continue
 
-    def download_date(self, date):
-        """Download all Brewer data for a given date."""
-        print(f"  [{date.strftime('%Y-%m-%d')}]")
-        html = self.get_daily_page(date)
-        links = self.extract_download_links(html)
+        if r.status_code == 200 and len(r.content) > 100 \
+                and b"html" not in r.content[:50].lower():
+            out = OUT_DIR / f"eubrewnet_brewer{brewer_id:03d}_{DATE_START}_{DATE_END}.csv"
+            out.write_bytes(r.content)
+            lines = r.text.strip().splitlines()
+            print(f"  ✓ #{brewer_id} → {out.name}  ({len(lines)-1} rows)")
+            return out
 
-        if not links:
-            if "available only for Registered" in html:
-                print("      No data available (not logged in?)")
-            else:
-                print("      No files found for this date")
-            return []
+        if r.status_code == 403 or "permission" in r.text.lower():
+            print(f"  ✗ #{brewer_id}: no API permission — request access from eubrewnet@aemet.es")
+            return None   # no point retrying other path
 
-        downloaded = []
-        for link in links:
-            out = self.download_file(link, date)
-            if out:
-                downloaded.append(out)
-        return downloaded
+        # else: 404 or wrong path → try next
+    return None
+
+
+def to_fmi_csv(src: Path, brewer_id: int):
+    """
+    Convert EUBREWNET CSV (gmt, o3, ...) to the FMI format expected by
+    gs_comparison.py (OBSDATE_UTC, OBSTIME_UTC, OZONE #NN (DU), ...).
+    """
+    lines = src.read_text().splitlines()
+    if not lines:
+        return
+
+    reader = csv.DictReader(lines)
+    fieldnames = reader.fieldnames or []
+
+    # Find the o3 column (varies: 'o3', 'O3', 'ozone')
+    o3_col = next((f for f in fieldnames if f.lower() == "o3"), None)
+    gmt_col = next((f for f in fieldnames if "gmt" in f.lower()), None)
+
+    if not o3_col or not gmt_col:
+        print(f"  [!] Could not find o3/gmt columns in {src.name}. Columns: {fieldnames}")
+        return
+
+    out = OUT_DIR / f"st-lpnn-7501fmisid-101932-eubrewnet-{brewer_id:03d}-{DATE_START}.csv"
+    col = f"OZONE #{brewer_id} (DU)"
+
+    with open(out, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["FMISID","LPNN","OBSDATE_UTC","OBSTIME_UTC", col],
+                           delimiter=";")
+        w.writeheader()
+        for row in csv.DictReader(lines):
+            try:
+                dt = datetime.strptime(row[gmt_col][:16], "%Y-%m-%dT%H:%M")
+                o3 = float(row[o3_col])
+            except (ValueError, KeyError):
+                continue
+            w.writerow({
+                "FMISID":       "101932",
+                "LPNN":         "7501",
+                "OBSDATE_UTC":  dt.strftime("%d.%m.%Y"),
+                "OBSTIME_UTC":  dt.strftime("%H:%M"),
+                col:            f"{o3:.1f}",
+            })
+
+    print(f"  → converted to FMI format: {out.name}")
+    src.unlink()   # remove intermediate file
 
 
 def main():
-    print("=== Brewer (EUBREWNET) Download — Sodankyla FMI ===\n")
-    print(f"  Station  : Sodankylä (ID={STATION_ID})")
-    print(f"  Product  : {PRODUCT} (Level {LEVEL})")
-    print(f"  Period   : {DATE_START} -> {DATE_END}")
-    print(f"  Brewers  : {', '.join(BREWER_IDS)}\n")
+    print("=== Brewer EUBREWNET download ===")
+    print(f"  Period : {DATE_START} → {DATE_END}")
+    print(f"  Brewers: {', '.join(f'#{b}' for b in BREWER_IDS)}\n")
 
-    session = EubrewnetSession(EUBREWNET_USER, EUBREWNET_PASS)
-    session.login()
+    if not USER:
+        print("  No credentials in .env — skipping API download.")
+        print("  Manual download: https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs")
+        return
 
-    start = datetime.strptime(DATE_START, "%Y-%m-%d")
-    end   = datetime.strptime(DATE_END, "%Y-%m-%d")
-    ndays = (end - start).days + 1
+    for bid in BREWER_IDS:
+        src = download_brewer(bid)
+        if src:
+            to_fmi_csv(src, bid)
 
-    all_files = []
-    for i in range(ndays):
-        date = start + timedelta(days=i)
-        files = session.download_date(date)
-        all_files.extend(files)
-
-    print(f"\n  Done: {len(all_files)} file(s) downloaded")
+    print("\nDone.")
 
 
 if __name__ == "__main__":
