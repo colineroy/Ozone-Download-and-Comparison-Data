@@ -148,7 +148,7 @@ Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.pn
 |   +-- Brewer/
 |   |   +-- README.md                 # How to get Brewer data (FMI manual)
 |   |   +-- brewer_data/              # FMI CSV files
-|   |   +-- Brewer_Technical_Documentation.docx
+|   |   +-- download_brewer.py
 |   +-- BTS/
 |   |   +-- README.md                 # How to get BTS data
 |   |   +-- BTS_data/                 # Local BTS CSV files
