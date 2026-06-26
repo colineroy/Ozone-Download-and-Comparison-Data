@@ -27,28 +27,31 @@ import numpy as np
 
 # -- CONFIG -----------------------------------------------------
 
-DATE_START = "2026-04-15"
-DATE_END   = "2026-04-15"
+DATE_START = "2026-04-30"
+DATE_END   = "2026-04-30"
 
 DOWNLOAD = {
     "SAOZ":    True,
     "Pandora": True,
     "S5P":     False,  # disabled — 330 MB each, slow
-    "GOME2":   False,  # disabled — many files, slow; using cached data
+    "GOME2":   False,  # disabled - many files, slow; using cached data
     "Brewer":  False,
 }
 
 # Paths
-SAOZ_RAW_DIR  = Path("./SAOZ/saoz_data")
-SAOZ_CSV_DIR  = SAOZ_RAW_DIR / "SK"
-PANDORA_DIR   = Path("./Pandora/pandora_data")
-BTS_DIR       = Path("./BTS/BTS_data")
-SONDE_DIR     = Path("./sondes")
-BREWER_DIR    = Path("./Brewer/brewer_data")
-S5P_DIR       = Path("./S5P/s5p_data/total_column")
-GOME2_DIR     = Path("./GOME2/GOME2_data")
-OMI_OMTO3_FILE  = Path("./OMI/omi_data/aura_omi_l2ovp_omto3_col4_v8.5_sodankyla_262 (1).txt")
-OMPS_NMTO3_FILE = Path("./OMPS/omps_data/suomi_npp_omps_l2ovp_nmto3_v2.1_sodankyla_262.txt")
+SAOZ_RAW_DIR  = Path("./ground/SAOZ/saoz_data")
+SAOZ_CSV_DIR  = SAOZ_RAW_DIR / "csvSAOZ"
+PANDORA_DIR   = Path("./ground/Pandora/pandora_data")
+BTS_DIR       = Path("./ground/BTS/BTS_data")
+SONDE_DIR     = Path("./ground/sondes/sondes_data")
+BREWER_DIR    = Path("./ground/Brewer/brewer_data")
+S5P_DIR       = Path("./satellite/S5P/s5p_data/total_column")
+GOME2_DIR     = Path("./satellite/GOME2/GOME2_data")
+GOME2_AVDC_DIR = Path("./satellite/GOME2/GOME2_avdc")
+
+OMI_DIR         = Path("./satellite/OMI/omi_data")
+OMI_OMTO3_FILE  = OMI_DIR / "aura_omi_l2ovp_omto3_col4_v8.5_sodankyla_262.txt"
+OMPS_NMTO3_FILE = Path("./satellite/OMPS/omps_data/suomi_npp_omps_l2ovp_nmto3_v2.1_sodankyla_262.txt")
 
 # SAOZ
 SAOZ_STATION  = "SK"
@@ -89,10 +92,11 @@ STYLES = {
     "Brewer037": {"color": "#9467bd", "marker": "v", "label": "Brewer #037"},
     "Brewer214": {"color": "#e6ab02", "marker": "^", "label": "Brewer #214"},
     "S5P":     {"color": "#17becf", "marker": ".", "label": "S5P TROPOMI"},
-    "GOME2B":  {"color": "#e377c2", "marker": ".", "label": "GOME-2B (MetOp-B)"},
-    "GOME2C":  {"color": "#8c564b", "marker": ".", "label": "GOME-2C (MetOp-C)"},
-    "OMI":     {"color": "#a03a3a", "marker": "s", "label": "OMI (OMTO3)"},
-    "OMPS":    {"color": "#7b2d8e", "marker": "D", "label": "OMPS (NMTO3)"},
+    "GOME2A":  {"color": "#ff9898", "marker": ".", "label": "GOME-2A"},
+    "GOME2B":  {"color": "#e377c2", "marker": ".", "label": "GOME-2B"},
+    "GOME2C":  {"color": "#8c564b", "marker": ".", "label": "GOME-2C"},
+    "OMI":     {"color": "#a03a3a", "marker": "s", "label": "OMI"},
+    "OMPS":    {"color": "#7b2d8e", "marker": "D", "label": "OMPS"},
 }
 
 # Approximate sunrise/sunset hours for Sodankyla (67°N)
@@ -413,6 +417,7 @@ def ensure_gome2(start, end):
 
     try:
         import eumdac
+        import eumdac.collection
     except ImportError:
         print("    [!] GOME2: eumdac not installed (pip install eumdac)")
         return False
@@ -450,7 +455,40 @@ def ensure_gome2(start, end):
                     print(f"    [dl] GOME2 {plat} {dt_day} -> {fname}")
                 except Exception as e:
                     print(f"    [!] GOME2 {fname}: {e}")
+
+    # Also ensure AVDC archive files
+    ensure_gome2_avdc()
+
     return count > 0
+
+
+def ensure_gome2_avdc():
+    """Download GOME-2 archive text files from NASA AVDC if not cached."""
+    GOME2_AVDC_DIR.mkdir(parents=True, exist_ok=True)
+    avdc_base = "https://avdc.gsfc.nasa.gov/pub/data/satellite/MetOp/GOME2/V03/L2OVP"
+    avdc_files = {
+        "GOME2A": "GOME2A/gome2a_l2ovp_sodankyla.txt",
+        "GOME2B": "GOME2B/gome2b_l2ovp_sodankyla.txt",
+        "GOME2C": "GOME2C/gome2c_l2ovp_sodankyla.txt",
+    }
+
+    count = 0
+    for sat, relpath in avdc_files.items():
+        fname = relpath.split("/")[-1]
+        out_path = GOME2_AVDC_DIR / fname
+        if out_path.exists():
+            continue
+        url = f"{avdc_base}/{relpath}"
+        try:
+            r = requests.get(url, timeout=300)
+            r.raise_for_status()
+            out_path.write_bytes(r.content)
+            size_mb = len(r.content) / 1e6
+            print(f"    [dl] AVDC {fname}  ({size_mb:.1f} MB)")
+            count += 1
+        except Exception as e:
+            print(f"    [!] AVDC {fname}: {e}")
+    return count
 
 
 def ensure_brewer(start, end):
@@ -650,38 +688,39 @@ def read_sonde_raw(start, end):
 
 
 def read_brewer_raw(start, end):
-    """Read Brewer #037 and #214 total column O3 from FMI CSV."""
+    """Read Brewer #037 and #214 total column O3 from FMI CSV(s)."""
     import csv
-    csv_path = Path("./Brewer/st-lpnn-7501fmisid-101932-csv-1782203564.csv")
-    if not csv_path.exists():
-        print(f"    [!] Brewer CSV not found: {csv_path}")
+    csv_files = sorted(BREWER_DIR.glob("*.csv"))
+    if not csv_files:
+        print(f"    [!] Brewer CSV not found in {BREWER_DIR}")
         return {}
     points = {"Brewer037": [], "Brewer214": []}
-    with open(str(csv_path), "r", encoding="latin-1") as f:
-        reader = csv.DictReader(f, delimiter=";")
-        for row in reader:
-            d = (row.get("OBSDATE_UTC", "") or "").strip()
-            t = (row.get("OBSTIME_UTC", "") or "").strip()
-            if not d or not t:
-                continue
-            try:
-                dt = datetime.strptime(f"{d} {t}", "%d.%m.%Y %H:%M")
-            except ValueError:
-                continue
-            if dt.date() < start or dt.date() > end:
-                continue
-            o37 = (row.get("OZONE #37 (DU)", "") or "").strip()
-            o214 = (row.get("OZONE #214 (DU)", "") or "").strip()
-            if o37:
+    for csv_path in csv_files:
+        with open(str(csv_path), "r", encoding="latin-1") as f:
+            reader = csv.DictReader(f, delimiter=";")
+            for row in reader:
+                d = (row.get("OBSDATE_UTC", "") or "").strip()
+                t = (row.get("OBSTIME_UTC", "") or "").strip()
+                if not d or not t:
+                    continue
                 try:
-                    points["Brewer037"].append((dt, float(o37)))
+                    dt = datetime.strptime(f"{d} {t}", "%d.%m.%Y %H:%M")
                 except ValueError:
-                    pass
-            if o214:
-                try:
-                    points["Brewer214"].append((dt, float(o214)))
-                except ValueError:
-                    pass
+                    continue
+                if dt.date() < start or dt.date() > end:
+                    continue
+                o37 = (row.get("OZONE #37 (DU)", "") or "").strip()
+                o214 = (row.get("OZONE #214 (DU)", "") or "").strip()
+                if o37:
+                    try:
+                        points["Brewer037"].append((dt, float(o37)))
+                    except ValueError:
+                        pass
+                if o214:
+                    try:
+                        points["Brewer214"].append((dt, float(o214)))
+                    except ValueError:
+                        pass
     return points
 
 
@@ -786,8 +825,7 @@ def read_gome2_raw(start, end):
         p = _find_gome2_paths(f)
         missing = [k for k in ("lat", "lon", "o3", "qa", "time") if p.get(k) is None]
         if missing:
-            print(f"    [!] GOME2 {fpath.name}: missing paths {missing} — skipping")
-            # Print available paths to help debug
+            print(f"    [!] GOME2 {fpath.name}: missing paths {missing} - skipping")
             for key in f.keys():
                 print(f"        group: /{key}")
             f.close()
@@ -837,6 +875,95 @@ def read_gome2_raw(start, end):
                 points[sat_key].append((dt, float(o3_valid[i])))
 
     return points
+
+
+_AVDC_SAT_MAP = {
+    "gome2a_l2ovp_sodankyla.txt": "GOME2A",
+    "gome2b_l2ovp_sodankyla.txt": "GOME2B",
+    "gome2c_l2ovp_sodankyla.txt": "GOME2C",
+}
+
+def read_gome2_avdc_raw(start, end):
+    """Read GOME-2 archive text files from NASA AVDC."""
+    import csv
+    points = {"GOME2A": [], "GOME2B": [], "GOME2C": []}
+
+    for fpath in sorted(GOME2_AVDC_DIR.glob("gome2[abc]_l2ovp_sodankyla.txt")):
+        sat_key = _AVDC_SAT_MAP.get(fpath.name)
+        if sat_key is None:
+            continue
+
+        try:
+            text = fpath.read_text(encoding="latin-1")
+        except Exception:
+            continue
+
+        lines = text.splitlines()
+        header_idx = None
+        for i, line in enumerate(lines):
+            if line.strip().startswith("Datetime"):
+                header_idx = i
+                break
+        if header_idx is None:
+            continue
+
+        data_lines = lines[header_idx + 1:]
+
+        for line in data_lines:
+            if not line.strip():
+                continue
+            parts = line.split()
+            if len(parts) < 20:
+                continue
+
+            raw_dt = parts[0]
+            if not raw_dt[:1].isdigit():
+                continue
+            if len(raw_dt) < 18:
+                continue
+            try:
+                year, month, day = int(raw_dt[:4]), int(raw_dt[4:6]), int(raw_dt[6:8])
+                hour, minute = int(raw_dt[9:11]), int(raw_dt[11:13])
+                second = int(raw_dt[13:15])
+                dt = datetime(year, month, day, hour, minute, second)
+            except Exception:
+                continue
+
+            try:
+                dist = float(parts[8])
+                o3 = float(parts[17])
+            except (ValueError, IndexError):
+                continue
+
+            if o3 <= 0:
+                continue
+            if dist > 100:
+                continue
+            if not (start <= dt.date() <= end):
+                continue
+
+            pts = points[sat_key]
+            pts.append((dt, o3))
+
+    for sat_key in list(points):
+        points[sat_key].sort(key=lambda x: x[0])
+    return points
+
+
+def read_gome2_merged(start, end):
+    """Read GOME-2 from both NRT (HDF5) and AVDC (archive text), merge points."""
+    result = {}
+    for reader in (read_gome2_raw, read_gome2_avdc_raw):
+        data = reader(start, end)
+        for sat_key, pts in data.items():
+            if not pts:
+                continue
+            existing = result.get(sat_key, [])
+            existing.extend(pts)
+            result[sat_key] = existing
+    for k in result:
+        result[k].sort(key=lambda x: x[0])
+    return result
 
 
 def read_s5p_raw(start, end):
@@ -1004,6 +1131,7 @@ def main():
         ("Sonde",   read_sonde_raw),
         ("S5P",     read_s5p_raw),
         ("GOME2",   read_gome2_raw),
+        ("GOME2_AVDC", read_gome2_avdc_raw),
         ("Brewer",  read_brewer_raw),
         ("OMI",     read_omi_total_column),
         ("OMPS",    read_omps_total_column),
@@ -1014,8 +1142,24 @@ def main():
     for name, reader in readers:
         points = reader(start_date, end_date)
         if name == "GOME2":
-            all_points.update(points)
+            # NRT HDF5 points
             for sat_key, pts in points.items():
+                if pts:
+                    all_points.setdefault(sat_key, []).extend(pts)
+            continue
+        elif name == "GOME2_AVDC":
+            # AVDC archive points - merge with any existing NRT data
+            for sat_key, pts in points.items():
+                if pts:
+                    existing = all_points.get(sat_key, [])
+                    existing.extend(pts)
+                    existing.sort(key=lambda x: x[0])
+                    all_points[sat_key] = existing
+            # Print GOME2 stats after merging both sources
+            for sat_key in sorted(all_points.keys()):
+                if not sat_key.startswith("GOME2"):
+                    continue
+                pts = all_points[sat_key]
                 n = len(pts)
                 msg = dl_info.get("GOME2")
                 if msg:

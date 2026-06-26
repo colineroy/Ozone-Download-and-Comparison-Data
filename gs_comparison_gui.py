@@ -4,6 +4,14 @@ import threading
 import concurrent.futures
 import traceback
 from datetime import datetime, date
+import logging
+
+_LOG = logging.getLogger("gui")
+_LOG.setLevel(logging.DEBUG)
+_fh = logging.FileHandler("_gui_debug.log", mode="w", encoding="utf-8")
+_fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+_LOG.addHandler(_fh)
+_LOG.info("=== START ===")
 
 import dash
 from dash import dcc, html, Input, Output
@@ -13,7 +21,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gs_comparison import (
     read_saoz_raw, read_pandora_raw, read_bts_raw,
-    read_sonde_raw, read_s5p_raw, read_gome2_raw,
+    read_sonde_raw, read_s5p_raw, read_gome2_merged,
     read_brewer_raw, read_omi_total_column, read_omps_total_column,
     STYLES,
 )
@@ -33,7 +41,7 @@ READERS = [
     ("BTS",     read_bts_raw,           False),
     ("Sonde",   read_sonde_raw,         False),
     ("S5P",     read_s5p_raw,           False),
-    ("GOME2",   read_gome2_raw,         True),
+    ("GOME2",   read_gome2_merged,      True),
     ("Brewer",  read_brewer_raw,        True),
     ("OMI",     read_omi_total_column,  False),
     ("OMPS",    read_omps_total_column, False),
@@ -64,32 +72,46 @@ def load_all_data(dt_start, dt_end):
                         r = _filter_by_date(cached_data, returns_dict, dt_start, dt_end)
                         if r:
                             result.update(r if returns_dict else {name: r})
+                        _LOG.info("CACHE HIT %s range=%s->%s", name, c_start, c_end)
                         continue
-            print(f"  Loading {name}...")
+            m = f"  Loading {name}..."
+            print(m, flush=True)
+            _LOG.info(m.strip())
             futures[name] = (ex.submit(reader, dt_start, dt_end), returns_dict)
 
         for name, (fut, returns_dict) in futures.items():
             try:
                 all_data = fut.result()
             except Exception as e:
-                print(f"    [!] {name} failed: {e}")
+                m = f"    [!] {name} failed: {e}"
+                print(m, flush=True)
+                _LOG.error(m.strip())
                 continue
             with _cache_lock:
                 _reader_cache[name] = (all_data, dt_start, dt_end)
             r = _filter_by_date(all_data, returns_dict, dt_start, dt_end)
+            n = sum(len(v) for v in r.values()) if isinstance(r, dict) else len(r)
+            m = f"    {name}: {n} pts loaded"
+            print(m, flush=True)
+            _LOG.info(m.strip())
             if r:
                 result.update(r if returns_dict else {name: r})
 
     counts = {k: len(v) for k, v in result.items() if v}
     if counts:
-        print(f"  -> {', '.join(f'{k}={v}' for k,v in counts.items())}")
+        m = f"  -> {', '.join(f'{k}={v}' for k,v in counts.items())}"
+        print(m, flush=True)
+        _LOG.info(m.strip())
+    _LOG.info("load_all_data result keys: %s", sorted(result.keys()))
     return result
 
 
 def _clear_cache():
     with _cache_lock:
         _reader_cache.clear()
-    print("  [cache cleared]")
+    m = "  [cache cleared]"
+    print(m, flush=True)
+    _LOG.info(m.strip())
 
 
 app = dash.Dash(__name__)
@@ -137,15 +159,19 @@ app.layout = html.Div([
 def update_graph(start_str, end_str, _clicks):
     no_data_style = {"display": "none", "text-align": "center", "font-size": "18px",
                      "color": "#888", "margin-top": "40px"}
+    _LOG.info("CALLBACK fired start=%s end=%s _clicks=%s", start_str, end_str, _clicks)
     try:
         if not start_str or not end_str:
+            _LOG.warning("CALLBACK empty dates")
             return go.Figure(), no_data_style
         try:
             start_date = datetime.strptime(start_str[:10], "%Y-%m-%d").date()
             end_date   = datetime.strptime(end_str[:10], "%Y-%m-%d").date()
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            _LOG.error("CALLBACK date parse error: %s", e)
             return go.Figure(), no_data_style
         if start_date > end_date:
+            _LOG.warning("CALLBACK start > end")
             return go.Figure(), no_data_style
 
         ctx = dash.callback_context
@@ -153,6 +179,7 @@ def update_graph(start_str, end_str, _clicks):
             _clear_cache()
 
         data = load_all_data(start_date, end_date)
+        _LOG.info("CALLBACK data keys: %s", sorted(data.keys()))
 
         fig = go.Figure()
         for key in sorted(data.keys()):
@@ -200,17 +227,19 @@ def update_graph(start_str, end_str, _clicks):
         )
         fig.update_yaxes(title="Total Ozone (DU)")
         has_any = any(len(v) > 0 for v in data.values())
+        _LOG.info("CALLBACK has_any=%s n_traces=%d", has_any, len(fig.data))
         if not has_any:
             return fig, {"display": "block", "text-align": "center", "font-size": "18px",
                          "color": "#888", "margin-top": "40px"}
         return fig, no_data_style
     except Exception:
+        _LOG.exception("CALLBACK unhandled exception")
         traceback.print_exc()
         return go.Figure(), no_data_style
 
 
 if __name__ == "__main__":
-    print("Starting GUI at http://127.0.0.1:8050")
+    print("Starting GUI at http://127.0.0.1:8080")
     print("First load is slow (GOME2 ~38s); subsequent date changes within range are instant.")
     print("Press Ctrl+C to stop.")
-    app.run(debug=False, host="127.0.0.1", port=8050)
+    app.run(debug=False, host="127.0.0.1", port=8080)

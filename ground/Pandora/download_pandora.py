@@ -15,8 +15,8 @@ PAN_ID = 309
 SPECTROMETER = "1"
 LEVEL = "L2"
 CODE = "rout2"
-DATE_START = "2026-04-30"
-DATE_END   = "2026-04-30"
+DATE_START = "2026-04-20"
+DATE_END   = "2026-04-20"
 
 OUT_DIR = Path("./pandora_data")
 OUT_DIR.mkdir(parents=True, exist_ok=True)

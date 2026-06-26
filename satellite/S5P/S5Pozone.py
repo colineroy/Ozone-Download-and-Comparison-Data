@@ -12,6 +12,9 @@ Dependencies:
 """
 
 import os
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
@@ -26,8 +29,8 @@ LON_SITE = 26.6297
 DELTA    = 0.5        # co-location window in degrees (~50 km)
 
 # Time period
-DATE_START = "2026-04-15"
-DATE_END   = "2026-04-15"   # ← start with one week !
+DATE_START = "2026-04-01"
+DATE_END   = "2026-04-03"   # ← start with one week !
 
 # Products to download — comment out either line to skip it
 PRODUCTS_TO_DOWNLOAD = [
@@ -35,10 +38,12 @@ PRODUCTS_TO_DOWNLOAD = [
     "L2__O3__PR_",   # Ozone profile       
 ]
 
-# Download folders (created automatically)
+SCRIPT_DIR = Path(__file__).parent.resolve()
+OUT_DIR = SCRIPT_DIR / "s5p_data"
+
 DIRS = {
-    "L2__O3____": Path("./s5p_data/total_column"),
-    "L2__O3__PR_": Path("./s5p_data/profile"),
+    "L2__O3____": OUT_DIR / "total_column",
+    "L2__O3__PR_": OUT_DIR / "profile",
 }
 for d in DIRS.values():
     d.mkdir(parents=True, exist_ok=True)
@@ -74,7 +79,7 @@ def get_access_token(username: str, password: str) -> str:
 
 def search_products(product_type, date_start, date_end, lat, lon, delta):
 
-    url = "https://catalogue.dataspace.copernicus.eu/odata/v1/Products"
+    base_url = "https://catalogue.dataspace.copernicus.eu/odata/v1/Products"
 
     params = {
         "$filter": (
@@ -87,12 +92,24 @@ def search_products(product_type, date_start, date_end, lat, lon, delta):
             f"{lon-delta} {lat-delta}))')"
         ),
         "$top": 500,
+        "$orderby": "ContentDate/Start asc",
     }
 
-    response = requests.get(url, params=params)
-    response.raise_for_status()
+    session = requests.Session()
+    retries = Retry(total=3, connect=3, backoff_factor=2,
+                    status_forcelist=[502, 503, 504])
+    session.mount("https://", HTTPAdapter(max_retries=retries))
 
-    all_products = response.json().get("value", [])
+    # pagination: follow @odata.nextLink until exhausted
+    all_products = []
+    url = base_url
+
+    while url:
+        response = session.get(url, params=params if url == base_url else None, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        all_products.extend(data.get("value", []))
+        url = data.get("@odata.nextLink")   # None on last page
 
     # actual filtering
     filtered = [
@@ -109,10 +126,13 @@ def search_products(product_type, date_start, date_end, lat, lon, delta):
 # ─────────────────────────────────────────────
 
 def download_product(product: dict, token: str, output_dir: Path) -> Path:
-    """Download one granule with progress bar. Skip if already present."""
+    """Download one granule with resume via Range requests + auto token refresh.
+    Writes to a .part file; renames on success. Skip if final file exists.
+    """
     name       = product["Name"]
     product_id = product["Id"]
     out_path   = output_dir / name
+    part_path  = out_path.with_name(out_path.name + ".part")
 
     if out_path.exists():
         print(f"  [skip]  {name}")
@@ -121,21 +141,61 @@ def download_product(product: dict, token: str, output_dir: Path) -> Path:
     url     = f"https://download.dataspace.copernicus.eu/odata/v1/Products({product_id})/$value"
     headers = {"Authorization": f"Bearer {token}"}
 
-    print(f"  [dl]    {name}")
-    with requests.get(url, headers=headers, stream=True) as r:
-        r.raise_for_status()
-        total      = int(r.headers.get("Content-Length", 0))
-        downloaded = 0
-        with open(out_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=65536):
-                f.write(chunk)
-                downloaded += len(chunk)
-                if total:
-                    pct = downloaded / total * 100
-                    print(f"\r          {pct:5.1f}%  "
-                          f"({downloaded/1e6:.1f} / {total/1e6:.1f} MB)", end="")
-        print()
+    for attempt in range(2):
+        resume = part_path.stat().st_size if part_path.exists() else 0
 
+        if resume:
+            headers["Range"] = f"bytes={resume}-"
+            mode = "ab"
+            print(f"  [resume] {name}  ({resume/1e6:.1f} MB already done)")
+        else:
+            headers.pop("Range", None)
+            mode = "wb"
+            print(f"  [dl]    {name}")
+
+        session = requests.Session()
+        retries = Retry(total=5, backoff_factor=2, status_forcelist=[502, 503, 504])
+        session.mount("https://", HTTPAdapter(max_retries=retries))
+
+        try:
+            with session.get(url, headers=headers, stream=True, timeout=300) as r:
+                if resume and r.status_code == 206:
+                    total_size = int(r.headers.get("Content-Length", 0)) + resume
+                else:
+                    if resume:
+                        mode = "wb"
+                        resume = 0
+                        print(f"  [dl]    {name}  (no Range support, starting over)")
+                    total_size = int(r.headers.get("Content-Length", 0))
+
+                if r.status_code == 401 and attempt == 0:
+                    print(f"  [auth]  Token expired, refreshing...")
+                    token = get_access_token(USERNAME, PASSWORD)
+                    headers["Authorization"] = f"Bearer {token}"
+                    continue
+
+                r.raise_for_status()
+
+                downloaded = resume
+                with open(part_path, mode) as f:
+                    for chunk in r.iter_content(chunk_size=65536):
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total_size:
+                            pct = downloaded / total_size * 100
+                            print(f"\r          {pct:5.1f}%  "
+                                  f"({downloaded/1e6:.1f} / {total_size/1e6:.1f} MB)", end="")
+                print()
+            break  # success
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 401 and attempt == 0:
+                print(f"  [auth]  Token expired, refreshing...")
+                token = get_access_token(USERNAME, PASSWORD)
+                headers["Authorization"] = f"Bearer {token}"
+                continue
+            raise
+
+    part_path.rename(out_path)
     return out_path
 
 
@@ -166,8 +226,8 @@ def main():
             continue
 
         n        = len(products)
-        size_est = n * (100 if "O3____" in ptype else 150)
-        print(f"  Estimated download: {n} files x ~{size_est//n} MB = ~{size_est} MB\n")
+        unit_mb  = 340 if "O3____" in ptype else 150
+        print(f"  Estimated download: {n} files x ~{unit_mb} MB = ~{n * unit_mb} MB\n")
 
         out_dir = DIRS[product_type]
         print(f"  Saving to: {out_dir}\n")

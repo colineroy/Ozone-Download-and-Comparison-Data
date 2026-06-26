@@ -14,18 +14,23 @@ Dependencies:
 """
 
 import os
+from pathlib import Path
+from datetime import datetime, timedelta
+
 from dotenv import load_dotenv
 load_dotenv()
 import requests
-from pathlib import Path
-from datetime import datetime, timedelta
+
+SCRIPT_DIR = Path(__file__).parent.resolve()
+OUT_DIR = SCRIPT_DIR / "omi_data"
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 LAT_SITE = 67.3668
 LON_SITE = 26.6297
 DELTA    = 0.5
 
-DATE_START = "2026-04-15"
-DATE_END   = "2026-04-15"
+DATE_START = "2026-05-29"
+DATE_END   = "2026-05-29"
 
 EARTHDATA_USER = os.getenv("EARTHDATA_USER", "your_username")
 EARTHDATA_PASS = os.getenv("EARTHDATA_PASS", "your_password")
@@ -33,17 +38,12 @@ EARTHDATA_TOKEN = os.getenv("EARTHDATA_TOKEN", "")
 
 PRODUCTS = {
     "OMDOAO3": {
-        "dir": Path("./OMI/omi_data/total_column"),
         "description": "OMI Total Column Ozone",
     },
     "OMPROFOZ": {
-        "dir": Path("./OMI/omi_data/profile"),
         "description": "OMI Ozone Profile",
     },
 }
-
-for d in PRODUCTS.values():
-    d["dir"].mkdir(parents=True, exist_ok=True)
 
 
 def search_cmr(product, start, end, lat, lon, delta):
@@ -106,16 +106,53 @@ def download_granule(granule, output_dir):
     return out_path
 
 
+AVDC_BASE = "https://avdc.gsfc.nasa.gov/pub/data/satellite/Aura/OMI/V03/L2OVP"
+
+AVDC_FILES = {
+    "OMTO3_total_column": {
+        "url": f"{AVDC_BASE}/OMTO3/aura_omi_l2ovp_omto3_col4_v8.5_sodankyla_262.txt",
+        "filename": "aura_omi_l2ovp_omto3_col4_v8.5_sodankyla_262.txt",
+    },
+    "OMDOAO3_total_column": {
+        "url": f"{AVDC_BASE}/OMDOAO3/aura_omi_l2ovp_omdoao3_v03_sodankyla_262.txt",
+        "filename": "aura_omi_l2ovp_omdoao3_v03_sodankyla_262.txt",
+    },
+    "OMO3PR_profile": {
+        "url": f"{AVDC_BASE}/OMO3PR/satellite_aura_omi_l2ovp_omo3pr_sodankyla.h5",
+        "filename": "satellite_aura_omi_l2ovp_omo3pr_sodankyla.h5",
+    },
+}
+
+
+def ensure_omi_avdc():
+    """Download OMI AVDC overpass text files (no auth required)."""
+    print("  [AVDC] OMI overpass files from NASA AVDC")
+    for key, info in AVDC_FILES.items():
+        out_path = OUT_DIR / info["filename"]
+        if out_path.exists():
+            print(f"    [skip] {info['filename']}")
+            continue
+        print(f"    [dl]   {info['filename']}")
+        with requests.get(info["url"], stream=True, timeout=120) as r:
+            r.raise_for_status()
+            with open(out_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=65536):
+                    f.write(chunk)
+    print()
+
+
 def main():
     print("=== OMI (Aura) Download — Sodankyla FMI ===\n")
     print(f"  Period: {DATE_START} -> {DATE_END}")
     print(f"  Site:   {LAT_SITE}N  {LON_SITE}E  ±{DELTA}°\n")
 
+    ensure_omi_avdc()
+
     for product, info in PRODUCTS.items():
         print(f"\n--- {info['description']} ({product}) ---")
         granules = search_cmr(product, DATE_START, DATE_END, LAT_SITE, LON_SITE, DELTA)
         for g in granules:
-            download_granule(g, info["dir"])
+            download_granule(g, OUT_DIR)
 
     print(f"\n=== Done ===")
 

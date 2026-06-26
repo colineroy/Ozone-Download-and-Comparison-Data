@@ -17,10 +17,10 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 | SAOZ | Ground | `http://saoz.obs.uvsq.fr/saoz/O3_YYYY.SK` | Direct download (no login) | DU |
 | Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | API (no login) | mol/m² → �-2241 → DU |
 | Brewer #037 / #214 | Ground | FMI portal ([hav.fmi.fi](https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs)) | Local files (manual) | DU |
-| BTS | Ground | Local CSV files in `BTS/BTS_data/` | Local files (manual) | DU |
-| Ozonesonde (ECC) | Ground | SHARP-format files in `sondes/sondes_data/` | Local files (manual) | DU (COL1) |
+| BTS | Ground | Local CSV files in `ground/BTS/BTS_data/` | Local files (manual) | DU |
+| Ozonesonde (ECC) | Ground | SHARP-format files in `ground/sondes/sondes_data/` | Local files (manual) | DU (COL1) |
 | S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → �-2241 → DU |
-| GOME-2B / GOME-2C | Satellite | `eumdac` (EUMETSAT Data Store, coll. `EO:EUM:DAT:METOP:NTO`) | API (credentials required) | DU |
+| GOME-2A / GOME-2B / GOME-2C | Satellite | NRT: `eumdac` (EUMETSAT coll. `EO:EUM:DAT:METOP:NTO`) / Archive: NASA AVDC (`https://avdc.gsfc.nasa.gov`) | NRT: API (credentials req.) / Archive: direct HTTP (no login) | DU |
 | OMI (Aura) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU (�-0.01) |
 | OMPS (Suomi-NPP) | Satellite | NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`) | API (credentials required) | DU |
 
@@ -97,10 +97,10 @@ Edit the `CONFIG` section at the top of each script.
 |---|---|---|
 | `DATE_START` | `"2026-04-15"` | Period start |
 | `DATE_END` | `"2026-04-15"` | Period end |
-| `SONDE_DIR` | `./sondes/sondes_data` | Ozonesonde data directory |
-| `S5P_PR_DIR` | `./S5P/s5p_data/profile` | S5P profile NetCDF directory |
-| `GOME2_DIR` | `./GOME2/GOME2_data` | GOME-2 HDF5 directory |
-| `AVDC_OMI_H5` | `./OMI/omi_data/npp_omo3pr_sodankyla.h5` | AVDC OMI profile HDF5 |
+| `SONDE_DIR` | `./ground/sondes/sondes_data` | Ozonesonde data directory |
+| `S5P_PR_DIR` | `./satellite/S5P/s5p_data/profile` | S5P profile NetCDF directory |
+| `GOME2_DIR` | `./satellite/GOME2/GOME2_data` | GOME-2 HDF5 directory |
+| `AVDC_OMI_H5` | `./satellite/OMI/omi_data/satellite_aura_omi_l2ovp_omo3pr_sodankyla.h5` | AVDC OMI profile HDF5 |
 
 ### `gs_comparison_gui.py`
 
@@ -112,12 +112,13 @@ Each instrument with auto-download has a dedicated script. Edit `DATE_START` and
 
 | Instrument | Script | Command | Config Variables |
 |---|---|---|---|
-| SAOZ | `SAOZ/download_saoz.py` | `python SAOZ/download_saoz.py` | `STATION`, `DATE_START`, `DATE_END` |
-| Pandora | `Pandora/download_pandora.py` | `python Pandora/download_pandora.py` | `PAN_ID`, `DATE_START`, `DATE_END` |
-| S5P TROPOMI | `S5P/S5Pozone.py` | `python S5P/S5Pozone.py` | `DATE_START`, `DATE_END`, Copernicus credentials |
-| GOME-2 | `GOME2/gome2_download.py` | `python GOME2/gome2_download.py` | `DATE_START`, `DATE_END`, EUMETSAT credentials |
-| OMI | `OMI/download_omi.py` | `python OMI/download_omi.py` | `DATE_START`, `DATE_END`, Earthdata credentials |
-| OMPS | `OMPS/download_omps.py` | `python OMPS/download_omps.py` | `DATE_START`, `DATE_END`, Earthdata credentials |
+| SAOZ | `ground/SAOZ/download_saoz.py` | `python SAOZ/download_saoz.py` | `STATION`, `DATE_START`, `DATE_END` |
+| Pandora | `ground/Pandora/download_pandora.py` | `python Pandora/download_pandora.py` | `PAN_ID`, `DATE_START`, `DATE_END` |
+| S5P TROPOMI | `satellite/S5P/S5Pozone.py` | `python satellite/S5P/S5Pozone.py` | `DATE_START`, `DATE_END`, Copernicus credentials |
+| GOME-2 (NRT) | `satellite/GOME2/gome2_download.py` | `python satellite/GOME2/gome2_download.py` | `DATE_START`, `DATE_END`, EUMETSAT credentials |
+| GOME-2 (Archive) | `satellite/GOME2/gome2_download.py` (auto-downloads AVDC txt) | same command | no credentials needed |
+| OMI | `satellite/OMI/download_omi.py` | `python satellite/OMI/download_omi.py` | `DATE_START`, `DATE_END`, Earthdata credentials |
+| OMPS | `satellite/OMPS/download_omps.py` | `python satellite/OMPS/download_omps.py` | `DATE_START`, `DATE_END`, Earthdata credentials |
 
 Credentials are read from the `.env` file (see [Credentials](#credentials)).
 
@@ -143,47 +144,62 @@ Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.pn
 +-- instruments.md                # Instrument reference table
 +-- .env                          # Credentials (gitignored)
 +-- .gitignore
-+-- SAOZ/
-|   +-- README.md                 # How to get SAOZ data
-|   +-- download_saoz.py
-|   +-- saoz_data/                # Raw + parsed SAOZ data
-+-- Pandora/
-|   +-- README.md                 # How to get Pandora data
-|   +-- download_pandora.py
-|   +-- pandora_data/             # Pandonia L2 text files
-+-- Brewer/
-|   +-- README.md                 # How to get Brewer data (FMI manual)
-|   +-- brewer_data/              # FMI CSV files
-|   +-- Brewer_Technical_Documentation.docx
-+-- BTS/
-|   +-- README.md                 # How to get BTS data
-|   +-- BTS_data/                 # Local BTS CSV files
-|   +-- BTS_OZON_Sodanklya.zip
-+-- sondes/
-|   +-- README.md                 # How to get ozonesonde data
-|   +-- sondes_data/              # Ozonesonde files (SHARP format)
-|       +-- parluku2.m                # MATLAB SHARP parser
-|       +-- SondeInfo.m               # MATLAB metadata extractor
-|       +-- table.m                   # MATLAB inventory generator
-|       +-- so*.q*                    # Ozonesonde data (SHARP format)
-+-- S5P/
-|   +-- README.md                 # How to get S5P TROPOMI data
-|   +-- S5Pozone.py               # TROPOMI downloader
-|   +-- s5p_data/total_column/    # S5P total column NetCDF
-|   +-- s5p_data/profile/         # S5P profile NetCDF
-+-- GOME2/
-|   +-- README.md                 # How to get GOME-2 data
-|   +-- gome2_download.py
-|   +-- GOME2_data/               # GOME-2 HDF5 files
-+-- OMI/
-|   +-- README.md                 # How to get OMI data
-|   +-- download_omi.py
-|   +-- omi_data/total_column/    # OMI OMDOAO3 NetCDF
-+-- OMPS/
-|   +-- README.md                 # How to get OMPS data
-|   +-- download_omps.py
-|   +-- omps_data/snpp_total_column/  # OMPS NMTO3 HDF5
-+-- FTIR/                         # Placeholder for future FTIR data
++-- ground/
+|   +-- Brewer/
+|   |   +-- README.md                 # How to get Brewer data (FMI manual)
+|   |   +-- brewer_data/              # FMI CSV files
+|   |   +-- Brewer_Technical_Documentation.docx
+|   +-- BTS/
+|   |   +-- README.md                 # How to get BTS data
+|   |   +-- BTS_data/                 # Local BTS CSV files
+|   |   +-- BTS_OZON_Sodanklya.zip
+|   +-- FTIR/                         # Placeholder for future FTIR data
+|   +-- Pandora/
+|   |   +-- README.md                 # How to get Pandora data
+|   |   +-- download_pandora.py
+|   |   +-- pandora_data/             # Pandonia L2 text files
+|   +-- SAOZ/
+|   |   +-- README.md                 # How to get SAOZ data
+|   |   +-- download_saoz.py
+|   |   +-- saoz_data/                # Raw + parsed SAOZ data
+|   |       +-- csvSAOZ/
+|   +-- sondes/
+|       +-- README.md                 # How to get ozonesonde data
+|       +-- sondes_data/              # Ozonesonde files (SHARP format)
+|           +-- parluku2.m                # MATLAB SHARP parser
+|           +-- SondeInfo.m               # MATLAB metadata extractor
+|           +-- table.m                   # MATLAB inventory generator
++-- satellite/
+|   +-- GOME2/
+|   |   +-- README.md                 # How to get GOME-2 data
+|   |   +-- gome2_download.py         # Downloads NRT HDF5 + AVDC archive
+|   |   +-- GOME2_data/               # GOME-2 NRT HDF5 files
+|   |   +-- GOME2_avdc/               # GOME-2 archive text files (AVDC)
+|   +-- MLS/
+|   |   +-- MLS_download.py           # MLS data downloader
+|   |   +-- ecc_mls_comparison.py     # ECC vs MLS profile comparison
+|   |   +-- mls_data/
+|   |       +-- ozone/                # MLS ozone HDF5
+|   |       +-- hno3/                 # MLS HNO3 HDF5
+|   +-- OMI/
+|   |   +-- README.md                 # How to get OMI data
+|   |   +-- download_omi.py
+|   |   +-- omi_data/
+|   |       +-- aura_omi_l2ovp_omto3_col4_v8.5_sodankyla_262.txt   # OMTO3 total column (AVDC)
+|   |       +-- aura_omi_l2ovp_omdoao3_v03_sodankyla_262.txt       # OMDOAO3 DOAS total column (AVDC)
+|   |       +-- satellite_aura_omi_l2ovp_omo3pr_sodankyla.h5        # OMO3PR profile (AVDC)
+|   +-- OMPS/
+|   |   +-- README.md                 # How to get OMPS data
+|   |   +-- download_omps.py
+|   |   +-- omps_data/
+|   |   |   +-- suomi_npp_omps_l2ovp_nmto3_v2.1_sodankyla_262.txt # NMTO3 overpass (AVDC)
+|   |   |   +-- noaa21_profile/        # NOAA-21 LP-L2-O3-DAILY daily profiles (AVDC)
+|   +-- S5P/
+|       +-- README.md                 # How to get S5P TROPOMI data
+|       +-- S5Pozone.py               # TROPOMI downloader
+|       +-- s5p_data/
+|           +-- total_column/         # S5P total column NetCDF
+|           +-- profile/              # S5P profile NetCDF
 +-- plots/                        # Generated comparison plots
 ```
 
@@ -221,61 +237,77 @@ plotly>=5.15
 - Data from `http://saoz.obs.uvsq.fr/saoz/O3_YYYY.SK` (sunrise + sunset columns).
 - Raw format: `Year Month Day DOY O3sr O3ss dO3sr dO3ss NO2sr NO2ss dNO2sr dNO2ss`
 - Sunrise/sunset hours estimated from a 67°N latitude table.
-- See `SAOZ/README.md` for details.
-- Standalone download: edit `STATION`, `DATE_START`, `DATE_END` in `SAOZ/download_saoz.py`, then run `python SAOZ/download_saoz.py`.
+- See `ground/SAOZ/README.md` for details.
+- Standalone download: edit `STATION`, `DATE_START`, `DATE_END` in `ground/SAOZ/download_saoz.py`, then run `python ground/SAOZ/download_saoz.py`.
 
 ### Pandora
 - L2 files from PGN API, column 39 = total column O3 (mol/m²).
 - Conversion: 1 mol/m² = 2241 DU.
-- See `Pandora/README.md` for details.
-- Standalone download: edit `PAN_ID`, `DATE_START`, `DATE_END` in `Pandora/download_pandora.py`, then run `python Pandora/download_pandora.py`.
+- See `ground/Pandora/README.md` for details.
+- Standalone download: edit `PAN_ID`, `DATE_START`, `DATE_END` in `ground/Pandora/download_pandora.py`, then run `python ground/Pandora/download_pandora.py`.
 
 ### Brewer
 - Data manually downloaded from FMI portal: https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs
 - Brewers #037 (MkII) and #214 — columns `OZONE #37 (DU)` and `OZONE #214 (DU)`.
-- Place the CSV in `Brewer/brewer_data/` — the reader detects it automatically.
+- Place the CSV in `ground/Brewer/brewer_data/` — the reader detects it automatically.
 - The EUBREWNET REST API also exists but requires special authorisation (a web
-  account alone is not sufficient). See `Brewer/README.md` for details.
+  account alone is not sufficient). See `ground/Brewer/README.md` for details.
 
-### BTS
+### BTS (Brewer-TOCON-Solar array spectroradiometer)
 - CSV format: `Time (ISO 8601, GMT), Airmass, Ozone (DU), ...`
-- Place files manually in `BTS/BTS_data/`.
-- See `BTS/README.md` for details.
+- Place files manually in `ground/BTS/BTS_data/`.
+- See `ground/BTS/README.md` for details.
 
 ### Ozonesonde (ECC)
 - SHARP ASCII format, trigger line matching `Sodankyla`.
 - Total column from `COL1` field.
 - Ascension ~2h window starting at ~08:30 UTC.
-- See `sondes/README.md` for details.
-- MATLAB parsers available in `sondes/sondes_data/` for raw SHARP data.
+- See `ground/sondes/README.md` for details.
+- MATLAB parsers available in `ground/sondes/sondes_data/` for raw SHARP data.
 
 ### S5P TROPOMI
 - NetCDF4, group `PRODUCT`, variable `ozone_total_vertical_column` (mol/m²).
 - Dimensions: `(time, scanline, ground_pixel)`.
 - Filtered by `qa_value > 0.5` and co-located within `±0.5°`.
 - Files ~100 MB (total column) to ~150 MB (profile) each.
-- See `S5P/README.md` for details.
-- Standalone download: edit `DATE_START`, `DATE_END` in `S5P/S5Pozone.py`, then run `python S5P/S5Pozone.py`.
+- See `satellite/S5P/README.md` for details.
+- Standalone download: edit `DATE_START`, `DATE_END` in `satellite/S5P/S5Pozone.py`, then run `python satellite/S5P/S5Pozone.py`.
 
 ### GOME-2
-- HDF5 files downloaded via the `eumdac` Python package (EUMETSAT Data Store, MetOp-B + MetOp-C).
+Two complementary data sources:
+
+**1. NRT (EUMETSAT Data Store)** — last ~60 days
+- HDF5 files via `eumdac` (MetOp-B + MetOp-C).
 - Collection `EO:EUM:DAT:METOP:NTO` - Near Real-Time Total Column O3.
-- Ozone already in DU.
-- See `GOME2/README.md` for details.
-- Standalone download: edit `DATE_START`, `DATE_END` in `GOME2/gome2_download.py`, then run `python GOME2/gome2_download.py`.
+- Credentials required in `.env`: `EUMETSAT_KEY`, `EUMETSAT_SECRET`.
+- See `satellite/GOME2/README.md` for details.
+
+**2. Archive (NASA AVDC)** — 2007 to present
+- Pre-computed overpass text files for Sodankyla, one file per satellite.
+- MetOp-A (2007-2021), MetOp-B (2013-2019 reprocessed), MetOp-C (2019-present).
+- Direct HTTP download, **no login required**.
+- URL: `https://avdc.gsfc.nasa.gov/pub/data/satellite/MetOp/GOME2/V03/L2OVP/GOME2[B|C]/gome2[b|c]_l2ovp_sodankyla.txt`
+- Column `VCD_O3` in DU, overpass within 100 km radius.
+- Downloaded automatically by `gome2_download.py` into `satellite/GOME2/GOME2_avdc/`.
+
+Standalone download: edit `DATE_START`, `DATE_END` in `satellite/GOME2/gome2_download.py`, then run `python satellite/GOME2/gome2_download.py`.
+It downloads both NRT HDF5 files and AVDC archive text files.
+
+**Note**: AVDC archive points appear more scattered than NRT HDF5 points because they are not quality-filtered (clouds, swath edges) and use a 100 km radius vs ±0.5° for NRT.
 
 ### OMI (Aura)
-- OMDOAO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C3454342622-GES_DISC`).
+- OMDOAO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C3454342622-GES_DISC`). Requires NASA Earthdata Login. Alternatively, pre-computed overpass text files from NASA AVDC (`https://avdc.gsfc.nasa.gov`).
 - AVDC overpass collocated text and OMO3PR profile HDF5 also supported.
 - Conversion factor: �-0.01 to DU.
-- See `OMI/README.md` for details.
-- Standalone download: edit `DATE_START`, `DATE_END` in `OMI/download_omi.py`, then run `python OMI/download_omi.py`.
+- See `satellite/OMI/README.md` for details.
+- Standalone download: edit `DATE_START`, `DATE_END` in `satellite/OMI/download_omi.py`, then run `python satellite/OMI/download_omi.py`.
 
 ### OMPS (Suomi-NPP)
-- NMTO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C1386443916-GES_DISC`).
+- NMTO3 total column from NASA GES DISC via CMR (`https://cmr.earthdata.nasa.gov`, collection `C1386443916-GES_DISC`). Requires NASA Earthdata Login. Also available as AVDC overpass text file (`https://avdc.gsfc.nasa.gov`).
+- NOAA-21 OMPS LP-L2-O3-DAILY ozone profiles from NASA AVDC (`https://avdc.gsfc.nasa.gov/pub/data/satellite/NOAA21/OMPS/L2OVP/LP-L2-O3-DAILY_v1.0/`). Used by `gs_profile_comparison.py`.
 - AVDC collocated text file also supported.
-- See `OMPS/README.md` for details.
-- Standalone download: edit `DATE_START`, `DATE_END` in `OMPS/download_omps.py`, then run `python OMPS/download_omps.py`.
+- See `satellite/OMPS/README.md` for details.
+- Standalone download: edit `DATE_START`, `DATE_END` in `satellite/OMPS/download_omps.py`, then run `python satellite/OMPS/download_omps.py`.
 
 ## Notes
 

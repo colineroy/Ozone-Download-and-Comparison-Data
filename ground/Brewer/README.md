@@ -2,7 +2,7 @@
 
 ## Data source
 
-Brewer total column ozone data for Sodankylä (Brewers #037 MkII, #214) is
+Brewer total column ozone data for Sodankylä (Brewers #037, #214) is
 downloaded manually from the **Finnish Meteorological Institute (FMI)** open
 data portal. There is no automated download script - CSV files must be placed
 in `brewer_data/` by hand.

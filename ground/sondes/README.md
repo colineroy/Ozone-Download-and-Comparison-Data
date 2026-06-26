@@ -12,7 +12,7 @@ No auto-download script is available.
 ## How to get the data
 
 1. Obtain SHARP-format sonde files (`.q*` extension) from FMI or NDACC
-2. Place the files in `sondes/`
+2. Place the files in `ground/sondes/sondes_data/`
 3. The main scripts will read them automatically
 
 File naming pattern: `soYYMMDD.qXX` (e.g. `so260415.q08`)
@@ -30,7 +30,7 @@ SHARP ASCII format:
 
 ## MATLAB parsers
 
-Additional tools for raw SHARP data are in `sondes/`:
+Additional tools for raw SHARP data are in `ground/sondes/sondes_data/`:
 
 | Script | Purpose |
 |---|---|

@@ -2,25 +2,30 @@
 .env
 
 # Données satellites et instruments
-SAOZ/saoz_data/
-Pandora/pandora_data/
-S5P/s5p_data/
-GOME2/GOME2_data/
-OMI/omi_data/
-OMPS/omps_data/
-BTS/BTS_data/
-BTS/*.zip
-Brewer/brewer_data/
+ground/SAOZ/saoz_data/
+ground/Pandora/pandora_data/
+satellite/S5P/s5p_data/
+satellite/GOME2/GOME2_data/
+satellite/GOME2/GOME2_avdc/
+satellite/OMI/omi_data/
+satellite/OMPS/omps_data/
+!satellite/OMPS/omps_data/suomi_npp*.txt
+ground/BTS/BTS_data/
+ground/BTS/*.zip
+ground/Brewer/brewer_data/
+ground/FTIR/
+satellite/MLS/
+doc utils/
 
 # Données sondes (fichiers SHARP et archives)
-sondes/so*.q*
-sondes/*.zip
-sondes/*.mat
-sondes/*.xls
-sondes/table.xls
+ground/sondes/so*.q*
+ground/sondes/*.zip
+ground/sondes/*.mat
+ground/sondes/*.xls
+ground/sondes/table.xls
 
 # Plots générés
-plots/
+#plots/
 
 # Python
 __pycache__/
@@ -35,8 +40,8 @@ Thumbs.db
 .vscode/
 .idea/
 
-Brewer/*.csv
-Pandora/*.png
+ground/Brewer/*.csv
+ground/Pandora/*.png
 *.log
 
 # MATLAB source files
@@ -44,4 +49,4 @@ Pandora/*.png
 
 # Technical documentation (large binary files)
 **/*.docx
-SAOZ/SAOZ_Technical_Documentation.pdf
+ground/SAOZ/SAOZ_Technical_Documentation.pdf

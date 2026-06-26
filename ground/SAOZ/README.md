@@ -5,9 +5,12 @@ Downloads total column O3 and NO2 from the SAOZ network
 
 ## What gets downloaded
 
-`download_saoz.py` fetches yearly files from:
+`download_saoz.py` fetches the yearly file from:
 
     http://saoz.obs.uvsq.fr/saoz/O3_YYYY.STATIONCODE
+
+Just set the `YEAR` you want — it downloads the **entire year** in one file (~1 sec)
+and automatically converts it to CSV.
 
 Each file contains **one line per day** with two measurements (sunrise + sunset):
 
@@ -17,24 +20,23 @@ Each file contains **one line per day** with two measurements (sunrise + sunset)
 | O3ss     | Ozone at sunset (Dobson units)                   |
 | dO3sr    | O3 sunrise uncertainty                           |
 | dO3ss    | O3 sunset uncertainty                            |
-| NO2sr    | NO2 at sunrise (�-1e15 mol/cm²)                   |
-| NO2ss    | NO2 at sunset (�-1e15 mol/cm²)                    |
+| NO2sr    | NO2 at sunrise (×1e15 mol/cm²)                   |
+| NO2ss    | NO2 at sunset (×1e15 mol/cm²)                    |
 | dNO2sr   | NO2 sunrise uncertainty                          |
 | dNO2ss   | NO2 sunset uncertainty                           |
 
 Output:
-- **Raw file**: `saoz_data/O3_YYYY.STATIONCODE`
-- **Parsed CSV**: `saoz_data/STATIONCODE/saoz_STATIONCODE_START_END.csv`
+- **Raw file**: `ground/SAOZ/saoz_data/O3_YYYY.STATIONCODE`
+- **CSV file**: `ground/SAOZ/saoz_data/csvSAOZ/saoz_STATIONCODE_YEAR.csv`
 
 ## Configuration
 
-Edit the top of `download_saoz.py`:
+Edit the top of `ground/SAOZ/download_saoz.py`:
 
 | Variable | Default | Description |
 |---|---|---|
 | `STATION` | `"SK"` | Station code (see table below) |
-| `DATE_START` | `"2025-04-15"` | Start date (YYYY-MM-DD) |
-| `DATE_END` | `"2025-04-15"` | End date (YYYY-MM-DD) |
+| `YEAR` | `2024` | Year to download |
 | `BASE_URL` | `"http://saoz.obs.uvsq.fr/saoz"` | SAOZ data server |
 | `OUT_DIR` | `Path("./saoz_data")` | Output directory |
 
@@ -59,11 +61,9 @@ Edit the top of `download_saoz.py`:
 ## How to download
 
 ```bash
-# From the SAOZ/ directory
-python download_saoz.py
-
-# Or from the project root
-python SAOZ/download_saoz.py
+# From the project root
+python ground/SAOZ/download_saoz.py
 ```
 
-No login required - data is public.
+No login required — data is public. The raw file is saved and the CSV is
+generated automatically.

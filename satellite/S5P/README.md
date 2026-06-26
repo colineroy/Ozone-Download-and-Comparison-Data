@@ -22,7 +22,7 @@ API: https://catalogue.dataspace.copernicus.eu/odata/v1/Products
 
 ## Configuration
 
-Edit the top of `S5Pozone.py`:
+Edit the top of `satellite/S5P/S5Pozone.py`:
 
 | Variable | Default | Description |
 |---|---|---|
@@ -35,19 +35,16 @@ Edit the top of `S5Pozone.py`:
 ## How to download
 
 ```bash
-# From the S5P/ directory
-python S5Pozone.py
-
-# Or from the project root
-python S5P/S5Pozone.py
+# From the project root
+python satellite/S5P/S5Pozone.py
 ```
 
 ## Output
 
 | Directory | Contents |
 |---|---|
-| `s5p_data/total_column/` | Total column NetCDF files (L2__O3____) |
-| `s5p_data/profile/` | Profile NetCDF files (L2__O3__PR_) |
+| `satellite/S5P/s5p_data/total_column/` | Total column NetCDF files (L2__O3____) |
+| `satellite/S5P/s5p_data/profile/` | Profile NetCDF files (L2__O3__PR_) |
 
 ## File format
 

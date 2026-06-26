@@ -30,10 +30,10 @@ MOL2DU  = 2241.15         # mol/m2 to DU
 DATE_START = "2026-04-15"
 DATE_END   = "2026-04-15"
 
-SONDE_DIR    = Path("./sondes")
-S5P_PR_DIR   = Path("./S5P/s5p_data/profile")
-GOME2_DIR    = Path("./GOME2/GOME2_data")
-AVDC_OMI_H5  = Path("./OMI/omi_data/npp_omo3pr_sodankyla.h5")
+SONDE_DIR    = Path("./ground/sondes/sondes_data")
+S5P_PR_DIR   = Path("./satellite/S5P/s5p_data/profile")
+GOME2_DIR    = Path("./satellite/GOME2/GOME2_data")
+AVDC_OMI_H5  = Path("./satellite/OMI/omi_data/satellite_aura_omi_l2ovp_omo3pr_sodankyla.h5")
 OUT_PLOT     = "plots/gs_profile_comparison_{}_{}.png"
 
 S5P_LAT    = 67.3668
@@ -181,6 +181,13 @@ def ensure_gome2(start, end):
                 except Exception as e:
                     print(f"    [!] GOME2 {fname}: {e}")
     return count > 0
+
+
+def ensure_noaa21(start, end):
+    NOAA21_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    from satellite.OMPS.download_omps import ensure_noaa21_avdc
+    ensure_noaa21_avdc(start, end)
+
 
 # ── Phase 2: Profile readers ──
 
@@ -494,6 +501,88 @@ def read_avdc_omi_profiles(start, end):
     print(f"    [avdc] {len(profiles)} OMI profiles found")
     return profiles
 
+
+NOAA21_PROFILE_DIR = Path("./satellite/OMPS/omps_data/noaa21_profile")
+
+
+def read_noaa21_profiles(start, end):
+    profiles = []
+    for fpath in sorted(NOAA21_PROFILE_DIR.glob("*.txt")):
+        text = fpath.read_text()
+        lines = text.splitlines()
+        if len(lines) < 10:
+            continue
+        # Parse header
+        dt_match = re.search(r"Date = (\d{8}),\s+sec\.\s*\(UT\)\s*=\s*(\d+)", text)
+        dist_match = re.search(r"Distance to the station =\s*([\d.]+)\s*km", text)
+        sza_match = re.search(r"SZA\s*=\s*([\d.]+)\s*deg", text)
+        qual_match = re.search(r"SwathLevelQualityFlags\s*=\s*(\d+)", text)
+        if not dt_match:
+            continue
+        ymd, ut_sec = dt_match.group(1), int(dt_match.group(2))
+        try:
+            overpass_dt = datetime.strptime(ymd, "%Y%m%d") + timedelta(seconds=ut_sec)
+        except ValueError:
+            continue
+        if not (start <= overpass_dt.date() <= end):
+            continue
+        distance = float(dist_match.group(1)) if dist_match else 999
+        sza = float(sza_match.group(1)) if sza_match else 999
+        qf = int(qual_match.group(1)) if qual_match else 0
+        if distance > 200 or sza > 88 or qf != 0:
+            continue
+        # Find data start line
+        data_start = None
+        for i, line in enumerate(lines):
+            if line.strip().startswith("Height(km)"):
+                data_start = i + 1
+                break
+        if data_start is None:
+            continue
+        heights, pressures, vmrs = [], [], []
+        for line in lines[data_start:]:
+            parts = line.split()
+            if len(parts) < 6:
+                continue
+            try:
+                h = float(parts[0])
+                p = float(parts[1])
+                vmr = float(parts[5])
+            except ValueError:
+                continue
+            if vmr < 0:
+                continue
+            heights.append(h)
+            pressures.append(p)
+            vmrs.append(vmr)
+        if len(heights) < 2:
+            continue
+        # Convert VMR (ppmv) to DU per layer
+        o3_layers = []
+        p_mid = []
+        for i in range(len(heights) - 1):
+            dp = abs(pressures[i] - pressures[i + 1])
+            vmr_avg = (vmrs[i] + vmrs[i + 1]) / 2
+            du = 0.789 * vmr_avg * dp
+            o3_layers.append(du)
+            p_mid.append(np.sqrt(pressures[i] * pressures[i + 1]))
+        if not o3_layers:
+            continue
+        o3_layers = np.array(o3_layers)
+        p_mid = np.array(p_mid)
+        order = np.argsort(p_mid)
+        profiles.append({
+            "source": fpath.name,
+            "label": f"NOAA21 ({overpass_dt.strftime('%H:%M')})",
+            "datetime": overpass_dt,
+            "pressure": p_mid[order],
+            "o3_layer": o3_layers[order],
+            "color": "#2ca02c",
+            "marker": "v",
+        })
+    return profiles
+
+
 # ── Phase 3: Interpolation ──
 
 def interpolate_profile(pressure, o3_layer, target_pressure):
@@ -582,6 +671,8 @@ def main():
     ensure_s5p_profile(start, end)
     print("  GOME2...")
     ensure_gome2(start, end)
+    print("  NOAA21...")
+    ensure_noaa21(start, end)
     print()
     print("-- Phase 2: Read profiles --")
     all_profiles = {}
@@ -625,6 +716,13 @@ def main():
         key = prof["source"]
         all_profiles[key] = prof
         print(f"  OMI        -- {len(prof['pressure']):4d} levels, "
+              f"O3: {prof['o3_layer'].sum():.1f} DU  ({prof['label']})")
+    # NOAA-21 OMPS LP
+    noaa21_profs = read_noaa21_profiles(start, end)
+    for prof in noaa21_profs:
+        key = prof["source"]
+        all_profiles[key] = prof
+        print(f"  NOAA21     -- {len(prof['pressure']):4d} levels, "
               f"O3: {prof['o3_layer'].sum():.1f} DU  ({prof['label']})")
     if not all_profiles:
         print("  No profiles found.")
