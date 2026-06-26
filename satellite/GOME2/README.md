@@ -97,7 +97,7 @@ NRT HDF5 points (`read_gome2_raw`) are quality-filtered (`qa_col == 0`) and use 
 
 AVDC text files (`read_gome2_avdc_raw`) include **all** valid pixels within a **100 km** radius -- up to 15-20 pixels per overpass (the 24 GOME-2 swath pixels over 2-3 scan lines). No quality filter is applied (clouds, swath edges, high SZA all pass through). This produces a wider dispersion ("band") in the comparison plot.
 
-## Reader in gs_comparison.py
+## Reader in comparaison/gs_comparison.py
 
 Both sources are read and merged points under the same satellite keys:
 

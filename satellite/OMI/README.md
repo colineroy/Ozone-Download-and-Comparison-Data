@@ -59,4 +59,4 @@ python satellite/OMI/download_omi.py
 
 - **Format**: HDF-EOS5 (`.he5`) or NetCDF
 - **Total column O3**: conversion factor ~-0.01 to DU
-- AVDC text files are read by `gs_comparison.py` and `gs_profile_comparison.py`
+- AVDC text files are read by `comparaison/gs_comparison.py` and `comparaison/gs_profile_comparison.py`

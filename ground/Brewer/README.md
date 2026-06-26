@@ -20,7 +20,7 @@ Steps:
 
 The CSV filename follows the pattern `st-lpnn-7501fmisid-101932-csv-*.csv`.
 
-`gs_comparison.py` detects these files automatically as long as the filename
+`comparaison/gs_comparison.py` detects these files automatically as long as the filename
 contains `fmisid`.
 
 ### Column names expected by the reader

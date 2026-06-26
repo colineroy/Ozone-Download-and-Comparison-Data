@@ -56,10 +56,10 @@ python satellite/OMPS/download_omps.py
 ## Output
 
 - `satellite/OMPS/omps_data/` — NMTO3 HDF5 granules (via CMR) + NMTO3 AVDC overpass text file (via HTTP).
-- `satellite/OMPS/omps_data/noaa21_profile/` — NOAA-21 LP-L2-O3-DAILY daily profile text files (via AVDC HTTP). Read by `gs_profile_comparison.py`.
+- `satellite/OMPS/omps_data/noaa21_profile/` — NOAA-21 LP-L2-O3-DAILY daily profile text files (via AVDC HTTP). Read by `comparaison/gs_profile_comparison.py`.
 
 ## File format
 
-- **NMTO3**: HDF5 (`.h5`) — total column, units as provided by GES DISC; AVDC text file read by `gs_comparison.py`
-- **NOAA-21 LP-L2-O3-DAILY**: Text (`.txt`) — daily limb profile, O3 VMR (ppmv) on 60 levels (0.5–60.5 km), converted to DU/layer by `gs_profile_comparison.py`
+- **NMTO3**: HDF5 (`.h5`) — total column, units as provided by GES DISC; AVDC text file read by `comparaison/gs_comparison.py`
+- **NOAA-21 LP-L2-O3-DAILY**: Text (`.txt`) — daily limb profile, O3 VMR (ppmv) on 60 levels (0.5–60.5 km), converted to DU/layer by `comparaison/gs_profile_comparison.py`
 - NOAA-20 OMPS data is not currently configured (check NOAA STAR or CLASS)

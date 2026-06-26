@@ -11,7 +11,7 @@ No public API or auto-download script is available.
 
 1. Request BTS total column ozone data for Sodankyla from FMI
 2. Place the CSV files in `ground/BTS/BTS_data/`
-3. The main script `gs_comparison.py` will read them automatically
+3. The main script `comparaison/gs_comparison.py` will read them automatically
 
 ## File format
 
@@ -29,4 +29,4 @@ Example filename: `20260410_TOC_BTS_66639_V1.csv`
 
 ## Output
 
-No output - files are read directly by `gs_comparison.py`.
+No output - files are read directly by `comparaison/gs_comparison.py`.

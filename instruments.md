@@ -5,7 +5,7 @@
 | SAOZ | Ground | Text | Yes (HTTP) | Direct (DU) | Active |
 | Pandora | Ground | Text | Yes https://api.pandonia-global-network.org/v1 | x2241 (mol/m2 to DU) | Active |
 | Brewer | Ground | FMI CSV (manual) | No (FMI portal manual) | Direct (DU) | Active |
-| BTS (Brewer-TOCON-Solar array spectroradiometer) | Ground | CSV | No (local file) | Direct (DU) | Active |
+| BTS (BiTec Sensor Solar Spectroradiometer) | Ground | CSV | No (local file) | Direct (DU) | Active |
 | Ozonesonde (ECC) | Ground | SHARP ASCII | No (local file) | Layer integration, scaled to COL1 | Active |
 | S5P TROPOMI | Satellite | NetCDF4 | Yes https://download.dataspace.copernicus.eu | x2241 (mol/m2 to DU) | Active |
 | GOME-2B | Satellite | HDF5 | Yes pip install eumdac | Direct (DU) | Active |

@@ -6,9 +6,9 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 
 | Script | Purpose |
 |---|---|
-| `gs_comparison.py` | Total column O3 comparison - ground + satellite instruments |
-| `gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P PR, GOME-2 NTO, OMI OMO3PR |
-| `gs_comparison_gui.py` | Dash web GUI wrapping `gs_comparison` readers (port 8050) |
+| `comparaison/gs_comparison.py` | Total column O3 comparison - ground + satellite instruments |
+| `comparaison/gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P PR, GOME-2 NTO, OMI OMO3PR |
+| `comparaison/gs_comparison_gui.py` | Dash web GUI wrapping `gs_comparison` readers (port 8050) |
 
 ## Supported Instruments
 
@@ -45,9 +45,9 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 
    | Command | What it does |
    |---|---|
-   | `python gs_comparison.py` | Total column O3 comparison - all ground + satellite instruments |
-   | `python gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P, GOME-2, OMI |
-   | `python gs_comparison_gui.py` | Interactive Dash web interface at http://127.0.0.1:8050 |
+   | `python comparaison/gs_comparison.py` | Total column O3 comparison - all ground + satellite instruments |
+   | `python comparaison/gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P, GOME-2, OMI |
+   | `python comparaison/gs_comparison_gui.py` | Interactive Dash web interface at http://127.0.0.1:8050 |
 
 ### Credentials
 
@@ -78,7 +78,7 @@ EARTHDATA_PASS=your_password
 
 Edit the `CONFIG` section at the top of each script.
 
-### `gs_comparison.py`
+### `comparaison/gs_comparison.py`
 
 | Variable | Default | Description |
 |---|---|---|
@@ -91,7 +91,7 @@ Edit the `CONFIG` section at the top of each script.
 | `S5P_RADIUS` | `0.5` | Spatial co-location window (degrees) |
 | `S5P_QA_MIN` | `0.5` | Quality assurance threshold |
 
-### `gs_profile_comparison.py`
+### `comparaison/gs_profile_comparison.py`
 
 | Variable | Default | Description |
 |---|---|---|
@@ -102,7 +102,7 @@ Edit the `CONFIG` section at the top of each script.
 | `GOME2_DIR` | `./satellite/GOME2/GOME2_data` | GOME-2 HDF5 directory |
 | `AVDC_OMI_H5` | `./satellite/OMI/omi_data/satellite_aura_omi_l2ovp_omo3pr_sodankyla.h5` | AVDC OMI profile HDF5 |
 
-### `gs_comparison_gui.py`
+### `comparaison/gs_comparison_gui.py`
 
 No configuration file needed. Date range is selected interactively in the web interface.
 
@@ -138,9 +138,10 @@ Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.pn
 
 ```
 .
-+-- gs_comparison.py              # Total column comparison (main)
-+-- gs_comparison_gui.py          # Dash web GUI
-+-- gs_profile_comparison.py      # Vertical profile comparison
++-- comparaison/
+|   +-- gs_comparison.py              # Total column comparison (main)
+|   +-- gs_comparison_gui.py          # Dash web GUI
+|   +-- gs_profile_comparison.py      # Vertical profile comparison
 +-- instruments.md                # Instrument reference table
 +-- .env                          # Credentials (gitignored)
 +-- .gitignore
@@ -253,7 +254,7 @@ plotly>=5.15
 - The EUBREWNET REST API also exists but requires special authorisation (a web
   account alone is not sufficient). See `ground/Brewer/README.md` for details.
 
-### BTS (Brewer-TOCON-Solar array spectroradiometer)
+### BTS (BiTec Sensor Solar Spectroradiometer)
 - CSV format: `Time (ISO 8601, GMT), Airmass, Ozone (DU), ...`
 - Place files manually in `ground/BTS/BTS_data/`.
 - See `ground/BTS/README.md` for details.
