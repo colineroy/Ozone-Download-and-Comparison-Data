@@ -1,4 +1,4 @@
-﻿# BTS - Brewer-Trajectory System ozone data
+﻿# BTS - BiTec Sensor Solar Spectroradiometer ozone data
 
 ## Data source
 
