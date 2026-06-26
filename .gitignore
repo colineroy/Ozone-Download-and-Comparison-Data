@@ -13,6 +13,7 @@ satellite/OMPS/omps_data/
 ground/BTS/BTS_data/
 ground/BTS/*.zip
 ground/Brewer/brewer_data/
+# ground/FTIR/  # large HDF4 file tracked; keep ignored
 ground/FTIR/
 satellite/MLS/
 doc utils/

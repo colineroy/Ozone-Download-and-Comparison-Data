@@ -23,7 +23,7 @@ from gs_comparison import (
     read_saoz_raw, read_pandora_raw, read_bts_raw,
     read_sonde_raw, read_s5p_raw, read_gome2_merged,
     read_brewer_raw, read_omi_total_column, read_omps_total_column,
-    STYLES,
+    read_ftir_raw, STYLES,
 )
 
 _MARKER_MAP = {
@@ -45,6 +45,7 @@ READERS = [
     ("Brewer",  read_brewer_raw,        True),
     ("OMI",     read_omi_total_column,  False),
     ("OMPS",    read_omps_total_column, False),
+    ("FTIR",    read_ftir_raw,          False),
 ]
 
 _reader_cache = {}

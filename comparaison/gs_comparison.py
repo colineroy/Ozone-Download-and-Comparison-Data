@@ -53,6 +53,9 @@ OMI_DIR         = Path("./satellite/OMI/omi_data")
 OMI_OMTO3_FILE  = OMI_DIR / "aura_omi_l2ovp_omto3_col4_v8.5_sodankyla_262.txt"
 OMPS_NMTO3_FILE = Path("./satellite/OMPS/omps_data/suomi_npp_omps_l2ovp_nmto3_v2.1_sodankyla_262.txt")
 
+# FTIR
+FTIR_FILE = Path("./ground/FTIR/groundbased_ftir.o3_fmi001_sodankyla_20120329t070932z_20210926t110630z_001.hdf")
+
 # SAOZ
 SAOZ_STATION  = "SK"
 SAOZ_BASE_URL = "http://saoz.obs.uvsq.fr/saoz"
@@ -97,6 +100,7 @@ STYLES = {
     "GOME2C":  {"color": "#8c564b", "marker": ".", "label": "GOME-2C"},
     "OMI":     {"color": "#a03a3a", "marker": "s", "label": "OMI"},
     "OMPS":    {"color": "#7b2d8e", "marker": "D", "label": "OMPS"},
+    "FTIR":    {"color": "#f5a623", "marker": "s", "label": "FTIR"},
 }
 
 # Approximate sunrise/sunset hours for Sodankyla (67°N)
@@ -781,6 +785,51 @@ def read_omps_total_column(start, end):
     return points
 
 
+def read_ftir_raw(start, end):
+    """Read FTIR total column O3 from NDACC GEOMS HDF4 file."""
+    if not FTIR_FILE.exists():
+        print(f"    [!] FTIR file not found: {FTIR_FILE}")
+        return []
+    try:
+        import netCDF4
+        f = netCDF4.Dataset(str(FTIR_FILE))
+    except Exception as e:
+        print(f"    [!] FTIR file error: {e}")
+        return []
+    try:
+        mjd2k = f.variables["DATETIME"][:]
+        tc = f.variables["O3.COLUMN_ABSORPTION.SOLAR"][:]
+        sza = f.variables["ANGLE.SOLAR_ZENITH.ASTRONOMICAL"][:]
+    except KeyError as e:
+        print(f"    [!] FTIR missing variable: {e}")
+        f.close()
+        return []
+    f.close()
+
+    if hasattr(mjd2k, "mask"):
+        mjd2k = mjd2k.filled(np.nan)
+    if hasattr(tc, "mask"):
+        tc = tc.filled(np.nan)
+    if hasattr(sza, "mask"):
+        sza = sza.filled(np.nan)
+
+    mjd2k = np.asarray(mjd2k).ravel()
+    tc = np.asarray(tc).ravel()
+    sza = np.asarray(sza).ravel()
+
+    base = datetime(2000, 1, 1)
+    points = []
+    for i in range(len(mjd2k)):
+        if np.isnan(mjd2k[i]) or np.isnan(tc[i]) or np.isnan(sza[i]):
+            continue
+        dt = base + timedelta(days=float(mjd2k[i]))
+        if dt.date() < start or dt.date() > end:
+            continue
+        o3_du = float(tc[i]) * 10**18 / 2.687e16
+        points.append((dt, o3_du))
+    return points
+
+
 def _find_gome2_paths(f):
     paths = {}
     def visitor(name, obj):
@@ -1135,6 +1184,7 @@ def main():
         ("Brewer",  read_brewer_raw),
         ("OMI",     read_omi_total_column),
         ("OMPS",    read_omps_total_column),
+        ("FTIR",    read_ftir_raw),
     ]
 
     all_points = {}

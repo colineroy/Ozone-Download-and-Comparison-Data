@@ -18,6 +18,7 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 | Pandora | Ground | PGN REST API (`api.pandonia-global-network.org`) | API (no login) | mol/m² → �-2241 → DU |
 | Brewer #037 / #214 | Ground | FMI portal ([hav.fmi.fi](https://hav.fmi.fi/hav/asema/?fmisid=101932&page=obs)) | Local files (manual) | DU |
 | BTS | Ground | Local CSV files in `ground/BTS/BTS_data/` | Local files (manual) | DU |
+| FTIR | Ground | NDACC GEOMS HDF4 file in `ground/FTIR/` | Local files (manual from NDACC/BIRA) | Emolec cm⁻² → ×37.214 → DU |
 | Ozonesonde (ECC) | Ground | SHARP-format files in `ground/sondes/sondes_data/` | Local files (manual) | DU (COL1) |
 | S5P TROPOMI | Satellite | Copernicus Data Space OData API | API (credentials required) | mol/m² → �-2241 → DU |
 | GOME-2A / GOME-2B / GOME-2C | Satellite | NRT: `eumdac` (EUMETSAT coll. `EO:EUM:DAT:METOP:NTO`) / Archive: NASA AVDC (`https://avdc.gsfc.nasa.gov`) | NRT: API (credentials req.) / Archive: direct HTTP (no login) | DU |
@@ -122,7 +123,7 @@ Each instrument with auto-download has a dedicated script. Edit `DATE_START` and
 
 Credentials are read from the `.env` file (see [Credentials](#credentials)).
 
-BTS, Brewer, and ozonesonde data must be placed manually - there are no download scripts.
+BTS, Brewer, FTIR, and ozonesonde data must be placed manually - there are no download scripts.
 
 ## Pipeline
 
@@ -154,7 +155,7 @@ Output filenames include the date range: `gs_comparison_YYYY-MM-DD_YYYY-MM-DD.pn
 |   |   +-- README.md                 # How to get BTS data
 |   |   +-- BTS_data/                 # Local BTS CSV files
 |   |   +-- BTS_OZON_Sodanklya.zip
-|   +-- FTIR/                         # Placeholder for future FTIR data
+|   +-- FTIR/                         # NDACC GEOMS HDF4 (472 MB, 2012-2021)
 |   +-- Pandora/
 |   |   +-- README.md                 # How to get Pandora data
 |   |   +-- download_pandora.py
@@ -258,6 +259,14 @@ plotly>=5.15
 - CSV format: `Time (ISO 8601, GMT), Airmass, Ozone (DU), ...`
 - Place files manually in `ground/BTS/BTS_data/`.
 - See `ground/BTS/README.md` for details.
+
+### FTIR
+- NDACC FTIR (Fourier Transform InfraRed) total column ozone at Sodankyla.
+- Single GEOMS HDF4 file (`ground/FTIR/groundbased_ftir.o3_fmi001_sodankyla_...hdf`), **472 MB**, covering **2012–2021** (16 818 measurements).
+- Read via `netCDF4.Dataset` (HDF4 compatible). No `pyhdf` needed.
+- Conversion: `O3.COLUMN_ABSORPTION.SOLAR` (Emolec cm⁻²) × 10¹⁸ / 2.687×10¹⁶ = DU.
+- File provided by BIRA-IASB / NDACC. Place it manually in `ground/FTIR/`.
+- See `ground/FTIR/README.md` for details (coming soon).
 
 ### Ozonesonde (ECC)
 - SHARP ASCII format, trigger line matching `Sodankyla`.
