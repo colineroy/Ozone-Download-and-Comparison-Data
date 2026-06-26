@@ -9,6 +9,8 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
 | `comparaison/gs_comparison.py` | Total column O3 comparison - ground + satellite instruments |
 | `comparaison/gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P PR, GOME-2 NTO, OMI OMO3PR |
 | `comparaison/gs_comparison_gui.py` | Dash web GUI wrapping `gs_comparison` readers (port 8050) |
+| `comparaison/ground_comparison.py` | Ground-only inter-comparison (SAOZ, Pandora, BTS, Brewer, Sonde, FTIR) |
+| `comparaison/sonde_brewer_comparison.py` | Sonde vs Brewer focused comparison |
 
 ## Supported Instruments
 
@@ -48,7 +50,9 @@ Multi-instrument comparison of total column ozone and vertical ozone profiles at
    |---|---|
    | `python comparaison/gs_comparison.py` | Total column O3 comparison - all ground + satellite instruments |
    | `python comparaison/gs_profile_comparison.py` | Vertical ozone profile comparison - sonde, S5P, GOME-2, OMI |
-   | `python comparaison/gs_comparison_gui.py` | Interactive Dash web interface at http://127.0.0.1:8050 |
+    | `python comparaison/gs_comparison_gui.py` | Interactive Dash web interface at http://127.0.0.1:8050 |
+    | `python comparaison/ground_comparison.py` | Ground-only inter-comparison (6 instruments) |
+    | `python comparaison/sonde_brewer_comparison.py` | Sonde vs Brewer focused comparison |
 
 ### Credentials
 
