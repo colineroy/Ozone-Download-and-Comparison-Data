@@ -49,4 +49,4 @@ ground/Pandora/*.png
 
 # Technical documentation (large binary files)
 **/*.docx
-ground/SAOZ/SAOZ_Technical_Documentation.pdf
+**/*.pdf
